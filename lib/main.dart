@@ -4,23 +4,29 @@ import 'dart:developer';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:irclone/chat_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:web_socket_channel/io.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-      options: const FirebaseOptions(
-          apiKey: "AIzaSyCybtkNwPRTD4Gs4sm4uV-4alupyuG5LOA",
-          authDomain: "irclone.firebaseapp.com",
-          projectId: "irclone",
-          storageBucket: "irclone.appspot.com",
-          messagingSenderId: "349437488054",
-          appId: "1:349437488054:web:4e47dc40075d7d916fef17",
-          measurementId: "G-PS2W9E5BHF"));
+  if (kIsWeb) {
+    await Firebase.initializeApp(
+        options: const FirebaseOptions(
+            apiKey: "AIzaSyCybtkNwPRTD4Gs4sm4uV-4alupyuG5LOA",
+            authDomain: "irclone.firebaseapp.com",
+            projectId: "irclone",
+            storageBucket: "irclone.appspot.com",
+            messagingSenderId: "349437488054",
+            appId: "1:349437488054:web:4e47dc40075d7d916fef17",
+            measurementId: "G-PS2W9E5BHF"));
+  } else {
+    await Firebase.initializeApp();
+  }
   runApp(const IrClone());
 }
 
@@ -54,37 +60,32 @@ class _AuthGateState extends State<AuthGate> {
         if (snapshot.hasData) {
           return ChatMain(
             channel: WebSocketChannel.connect(
-              Uri.parse("wss://beta.ircta.lk/irctalk"),
+              Uri.parse("wss://beta.ircta.lk:443/irctalk"),
             ),
-            accessToken: accessToken == null ? "" : accessToken!,
+            accessToken: accessToken ?? "",
           );
         } else {
           return Center(
-            child: Column(
-              children: [
-                TextButton(
-                    onPressed: () async {
-                      var googleSignIn = GoogleSignIn(
-                        clientId:
-                            "349437488054-apko0h450gts1nqpfe9g085qrkgn2b1h.apps.googleusercontent.com",
-                        scopes: [
-                          'https://www.googleapis.com/auth/userinfo.email',
-                          'https://www.googleapis.com/auth/userinfo.profile',
-                        ],
-                      );
+            child: TextButton(
+                onPressed: () async {
+                  var googleSignIn = GoogleSignIn(
+                    clientId:
+                        "349437488054-apko0h450gts1nqpfe9g085qrkgn2b1h.apps.googleusercontent.com",
+                    scopes: [
+                      'https://www.googleapis.com/auth/userinfo.email',
+                      'https://www.googleapis.com/auth/userinfo.profile',
+                    ],
+                  );
 
-                      var user = await googleSignIn.signIn();
-                      var auth = await user?.authentication;
-                      var cred = GoogleAuthProvider.credential(
-                          accessToken: auth?.accessToken,
-                          idToken: auth?.idToken);
-                      await FirebaseAuth.instance.signInWithCredential(cred);
+                  var user = await googleSignIn.signIn();
+                  var auth = await user?.authentication;
+                  var cred = GoogleAuthProvider.credential(
+                      accessToken: auth?.accessToken, idToken: auth?.idToken);
+                  await FirebaseAuth.instance.signInWithCredential(cred);
 
-                      accessToken = auth?.accessToken;
-                    },
-                    child: const Text("sign in")),
-              ],
-            ),
+                  accessToken = auth?.accessToken;
+                },
+                child: const Text("sign in")),
           );
         }
       },
