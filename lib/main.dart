@@ -53,7 +53,6 @@ class _AuthGateState extends State<AuthGate> {
       builder: (context, snapshot) {
         if (snapshot.hasData) {
           return ChatMain(
-            title: "channel name",
             channel: WebSocketChannel.connect(
               Uri.parse("wss://beta.ircta.lk/irctalk"),
             ),
@@ -94,15 +93,10 @@ class _AuthGateState extends State<AuthGate> {
 }
 
 class ChatMain extends StatefulWidget {
-  final String title;
   final WebSocketChannel channel;
   final String accessToken;
 
-  const ChatMain(
-      {Key? key,
-      required this.title,
-      required this.channel,
-      required this.accessToken})
+  const ChatMain({Key? key, required this.channel, required this.accessToken})
       : super(key: key);
 
   @override
@@ -117,7 +111,8 @@ class _ChatMainState extends State<ChatMain> {
     return ++_msgId;
   }
 
-  final List<Chat> _logs = [];
+  String _currentChannel = "";
+  final Map<String, List<Chat>> _logs = {};
 
   @override
   void initState() {
@@ -144,9 +139,27 @@ class _ChatMainState extends State<ChatMain> {
 
   @override
   Widget build(BuildContext context) {
+    List<ListTile> drawer = [];
+    for (var c in _logs.keys) {
+      drawer.add(ListTile(
+        title: Text(c),
+        onTap: () {
+          setState(() {
+            _currentChannel = c;
+          });
+          Navigator.pop(context);
+        },
+      ));
+    }
+
     return Scaffold(
+      drawer: Drawer(
+        child: ListView(
+          children: drawer,
+        ),
+      ),
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text(_currentChannel),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -166,7 +179,9 @@ class _ChatMainState extends State<ChatMain> {
               ),
             ),
             Expanded(
-              child: ChatView(logs: _logs),
+              child: _currentChannel.isEmpty
+                  ? Container()
+                  : ChatView(logs: _logs[_currentChannel]!),
             ),
             Text(msgLog),
           ],
@@ -211,14 +226,32 @@ class _ChatMainState extends State<ChatMain> {
         break;
       case "getServers":
         for (var channel in json["data"]["channels"]) {
-          log(channel.toString());
+          _logs[channel["channel"]] = [];
+          if (_currentChannel.isEmpty) {
+            setState(() {
+              _currentChannel = channel["channel"];
+            });
+          }
+        }
+        var getInitLog = {
+          "type": "getInitLogs",
+          "data": {},
+          "msg_id": _getMsgId()
+        };
+        //_send(getInitLog);
+        break;
+      case "getInitLogs":
+        for (var l in json["data"]["logs"]) {
+          _logs[l["channel"]]!.add(Chat(
+              channel: l["channel"], from: l["from"] ?? "", msg: l["message"]));
+          //log(l["from"]);
         }
         break;
       case "pushLog":
       case "sendLog":
         var msg = json["data"]["log"];
         setState(() {
-          _logs.add(Chat(
+          _logs[msg["channel"]]!.add(Chat(
               channel: msg["channel"], from: msg["from"], msg: msg["message"]));
         });
         break;
