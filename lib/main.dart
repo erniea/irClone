@@ -52,9 +52,10 @@ class _AuthGateState extends State<AuthGate> {
       builder: (context, snapshot) {
         if (snapshot.hasData) {
           return ChatMain(
-            title: accessToken == null ? "" : accessToken!,
+            title: "channel name",
             channel: WebSocketChannel.connect(
-                Uri.parse("wss://beta.ircta.lk/irctalk")),
+              Uri.parse("wss://beta.ircta.lk/irctalk"),
+            ),
             accessToken: accessToken == null ? "" : accessToken!,
           );
         } else {
@@ -122,20 +123,22 @@ class _ChatMainState extends State<ChatMain> {
     super.initState();
     widget.channel.stream.listen(_ss);
 
-    SharedPreferences.getInstance().then((value) {
-      String? authKey = value.getString("authKey");
+    SharedPreferences.getInstance().then(
+      (value) {
+        String? authKey = value.getString("authKey");
 
-      if (authKey == null || authKey.isEmpty) {
-        var register = {
-          "type": "register",
-          "data": {"access_token": widget.accessToken},
-          "msg_id": _getMsgId(),
-        };
-        _send(register);
-      } else {
-        _tryLogin(authKey);
-      }
-    });
+        if (authKey == null || authKey.isEmpty) {
+          var register = {
+            "type": "register",
+            "data": {"access_token": widget.accessToken},
+            "msg_id": _getMsgId(),
+          };
+          _send(register);
+        } else {
+          _tryLogin(authKey);
+        }
+      },
+    );
   }
 
   @override
