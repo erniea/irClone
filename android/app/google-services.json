@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "349437488054",
+    "project_id": "irclone",
+    "storage_bucket": "irclone.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:349437488054:android:9a95cc44ad80290d6fef17",
+        "android_client_info": {
+          "package_name": "com.bargnbada.irclone"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "349437488054-8bpauddguuhs7793logspcg3k3ttiu4e.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bargnbada.irclone",
+            "certificate_hash": "98803f220ad2a60aa9210de496aa7d4bc4023200"
+          }
+        },
+        {
+          "client_id": "349437488054-apko0h450gts1nqpfe9g085qrkgn2b1h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDiKSLpuJEmeslOap3-5cZ_JyEFowbYkLA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "349437488054-apko0h450gts1nqpfe9g085qrkgn2b1h.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
