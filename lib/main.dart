@@ -5,6 +5,7 @@ import 'dart:developer';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:irclone/chat_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -116,12 +117,12 @@ class _ChatMainState extends State<ChatMain> {
     return ++_msgId;
   }
 
-  final List<ListTile> _logs = [];
+  final List<Chat> _logs = [];
 
   @override
   void initState() {
     super.initState();
-    widget.channel.stream.listen(_ss);
+    widget.channel.stream.listen(_msgHandler);
 
     SharedPreferences.getInstance().then(
       (value) {
@@ -165,9 +166,7 @@ class _ChatMainState extends State<ChatMain> {
               ),
             ),
             Expanded(
-              child: ListView(
-                children: _logs,
-              ),
+              child: ChatView(logs: _logs),
             ),
             Text(msgLog),
           ],
@@ -194,7 +193,7 @@ class _ChatMainState extends State<ChatMain> {
     _send(login);
   }
 
-  void _ss(event) async {
+  void _msgHandler(event) async {
     var json = jsonDecode(event.toString());
     switch (json["type"]) {
       case "register":
@@ -203,14 +202,24 @@ class _ChatMainState extends State<ChatMain> {
         _tryLogin(json["data"]["auth_key"]);
         break;
       case "login":
+        var reqServer = {
+          "type": "getServers",
+          "data": {},
+          "msg_id": _getMsgId()
+        };
+        _send(reqServer);
+        break;
+      case "getServers":
+        for (var channel in json["data"]["channels"]) {
+          log(channel.toString());
+        }
         break;
       case "pushLog":
       case "sendLog":
         var msg = json["data"]["log"];
         setState(() {
-          _logs.add(ListTile(
-            title: Text("${msg['channel']} <${msg['from']}> ${msg['message']}"),
-          ));
+          _logs.add(Chat(
+              channel: msg["channel"], from: msg["from"], msg: msg["message"]));
         });
         break;
     }
