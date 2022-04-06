@@ -1,10 +1,11 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
-import 'dart:html';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutterfire_ui/auth.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -43,55 +44,63 @@ class AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<AuthGate> {
   String str = "test";
+  String? accessToken;
   @override
   Widget build(BuildContext context) {
     return StreamBuilder(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          return snapshot.hasData
-              ? ChatMain(
-                  title: "title",
-                  channel: WebSocketChannel.connect(Uri.parse("ws://url")),
-                )
-              : Center(
-                  child: Column(
-                    children: [
-                      TextButton(
-                          onPressed: () async {
-                            var googleSignIn = GoogleSignIn(
-                                clientId:
-                                    "349437488054-apko0h450gts1nqpfe9g085qrkgn2b1h.apps.googleusercontent.com");
-
-                            var user = await googleSignIn.signIn();
-                            var auth = await user?.authentication;
-                            var cred = GoogleAuthProvider.credential(
-                                accessToken: auth?.accessToken,
-                                idToken: auth?.idToken);
-                            //log(auth?.accessToken as String);
-                            await FirebaseAuth.instance
-                                .signInWithCredential(cred);
-                          },
-                          child: Text(str)),
-                    ],
-                  ),
-                );
-          /*const SignInScreen(
-                  providerConfigs: [
-                    GoogleProviderConfiguration(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          return ChatMain(
+            title: accessToken == null ? "" : accessToken!,
+            channel: WebSocketChannel.connect(
+                Uri.parse("wss://beta.ircta.lk/irctalk")),
+            accessToken: accessToken == null ? "" : accessToken!,
+          );
+        } else {
+          return Center(
+            child: Column(
+              children: [
+                TextButton(
+                    onPressed: () async {
+                      var googleSignIn = GoogleSignIn(
                         clientId:
-                            "349437488054-apko0h450gts1nqpfe9g085qrkgn2b1h.apps.googleusercontent.com")
-                  ],
-                );
-                */
-        });
+                            "349437488054-apko0h450gts1nqpfe9g085qrkgn2b1h.apps.googleusercontent.com",
+                        scopes: [
+                          'https://www.googleapis.com/auth/userinfo.email',
+                          'https://www.googleapis.com/auth/userinfo.profile',
+                        ],
+                      );
+
+                      var user = await googleSignIn.signIn();
+                      var auth = await user?.authentication;
+                      var cred = GoogleAuthProvider.credential(
+                          accessToken: auth?.accessToken,
+                          idToken: auth?.idToken);
+                      await FirebaseAuth.instance.signInWithCredential(cred);
+
+                      accessToken = auth?.accessToken;
+                    },
+                    child: const Text("sign in")),
+              ],
+            ),
+          );
+        }
+      },
+    );
   }
 }
 
 class ChatMain extends StatefulWidget {
   final String title;
   final WebSocketChannel channel;
+  final String accessToken;
 
-  const ChatMain({Key? key, required this.title, required this.channel})
+  const ChatMain(
+      {Key? key,
+      required this.title,
+      required this.channel,
+      required this.accessToken})
       : super(key: key);
 
   @override
@@ -100,6 +109,34 @@ class ChatMain extends StatefulWidget {
 
 class _ChatMainState extends State<ChatMain> {
   final TextEditingController _controller = TextEditingController();
+  String msgLog = "";
+  int _msgId = 0;
+  int _getMsgId() {
+    return ++_msgId;
+  }
+
+  final List<ListTile> _logs = [];
+
+  @override
+  void initState() {
+    super.initState();
+    widget.channel.stream.listen(_ss);
+
+    SharedPreferences.getInstance().then((value) {
+      String? authKey = value.getString("authKey");
+
+      if (authKey == null || authKey.isEmpty) {
+        var register = {
+          "type": "register",
+          "data": {"access_token": widget.accessToken},
+          "msg_id": _getMsgId(),
+        };
+        _send(register);
+      } else {
+        _tryLogin(authKey);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -118,37 +155,73 @@ class _ChatMainState extends State<ChatMain> {
               },
               child: const Text("sign out"),
             ),
-            TextButton(onPressed: () {}, child: const Text("msg")),
-            //Text(FirebaseAuth.instance.currentUser?.tenantId as String),
             Form(
               child: TextFormField(
                 controller: _controller,
                 decoration: const InputDecoration(labelText: 'Send a message'),
               ),
             ),
-            Text(""),
-            StreamBuilder(
-              stream: widget.channel.stream,
-              builder: (context, snapshot) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24.0),
-                  child: Text(snapshot.hasData ? '${snapshot.data}' : ''),
-                );
-              },
-            )
+            Expanded(
+              child: ListView(
+                children: _logs,
+              ),
+            ),
+            Text(msgLog),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _sendMessage,
         child: const Icon(Icons.send),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      ),
     );
+  }
+
+  void _send(json) {
+    log(json.toString());
+    widget.channel.sink.add(jsonEncode(json));
+  }
+
+  void _tryLogin(authKey) {
+    var login = {
+      "type": "login",
+      "data": {"auth_key": authKey},
+      "msg_id": _getMsgId()
+    };
+    _send(login);
+  }
+
+  void _ss(event) async {
+    var json = jsonDecode(event.toString());
+    switch (json["type"]) {
+      case "register":
+        var sp = await SharedPreferences.getInstance();
+        sp.setString("authKey", json["data"]["auth_key"]);
+        _tryLogin(json["data"]["auth_key"]);
+        break;
+      case "login":
+        break;
+      case "pushLog":
+      case "sendLog":
+        var msg = json["data"]["log"];
+        setState(() {
+          _logs.add(ListTile(
+            title: Text("${msg['channel']} <${msg['from']}> ${msg['message']}"),
+          ));
+        });
+        break;
+    }
+
+    setState(() {
+      msgLog = event.toString();
+    });
   }
 
   void _sendMessage() {
     if (_controller.text.isNotEmpty) {
-      widget.channel.sink.add(_controller.text);
+      widget.channel.sink.add(
+          '{"type":"sendLog","data":{"server_id":2,"channel":"#erniea","message":"${_controller.text}"},"msg_id":${_getMsgId()}}');
+      _controller.text = "";
     }
   }
 
