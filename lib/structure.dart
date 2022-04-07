@@ -1,7 +1,9 @@
 import 'dart:collection';
 
 class Chat {
-  const Chat({required this.from, required this.msg});
+  const Chat({required this.timestamp, required this.from, required this.msg});
+
+  final int timestamp;
   final String from;
   final String msg;
 }

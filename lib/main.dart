@@ -107,7 +107,6 @@ class ChatMain extends StatefulWidget {
 
 class _ChatMainState extends State<ChatMain> {
   final TextEditingController _controller = TextEditingController();
-  String msgLog = "";
   int _msgId = 0;
   int _getMsgId() {
     return ++_msgId;
@@ -178,7 +177,6 @@ class _ChatMainState extends State<ChatMain> {
                   suffixIcon: IconButton(
                       onPressed: _sendMessage, icon: const Icon(Icons.send))),
             ),
-            Text(msgLog),
           ],
         ),
       ),
@@ -186,20 +184,24 @@ class _ChatMainState extends State<ChatMain> {
   }
 
   Widget _channelBuilder(context) {
-    List<ListTile> children = [];
-    for (var c in servers[_currentServer]!.channels.keys) {
-      children.add(ListTile(
-        title: Text(c),
-        onTap: () {
-          setState(() {
-            _currentChannel = c;
-          });
-          Navigator.pop(context);
-        },
-      ));
-    }
     return ListView(
-      children: children,
+      children: servers[_currentServer]!
+          .channels
+          .keys
+          .map((e) => _channelElement(context, e))
+          .toList(),
+    );
+  }
+
+  Widget _channelElement(context, key) {
+    return ListTile(
+      title: Text(key),
+      onTap: () {
+        setState(() {
+          _currentChannel = key;
+        });
+        Navigator.pop(context);
+      },
     );
   }
 
@@ -252,27 +254,25 @@ class _ChatMainState extends State<ChatMain> {
         break;
       case "getInitLogs":
         for (var l in json["data"]["logs"]) {
-          servers[_currentServer]!
-              .channels[l["channel"]]!
-              .chats
-              .add(Chat(from: l["from"] ?? "", msg: l["message"]));
+          servers[_currentServer]!.channels[l["channel"]]!.chats.add(Chat(
+              timestamp: l["timestamp"],
+              from: l["from"] ?? "",
+              msg: l["message"]));
         }
         break;
       case "pushLog":
       case "sendLog":
         var msg = json["data"]["log"];
         setState(() {
-          servers[_currentServer]!
-              .channels[msg["channel"]]!
-              .chats
-              .add(Chat(from: msg["from"], msg: msg["message"]));
+          servers[_currentServer]!.channels[msg["channel"]]!.chats.add(Chat(
+              timestamp: msg["timestamp"],
+              from: msg["from"],
+              msg: msg["message"]));
         });
         break;
     }
 
-    setState(() {
-      //msgLog = json.toString();
-    });
+    log(json.toString());
   }
 
   void _sendMessage() {

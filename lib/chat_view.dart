@@ -13,13 +13,14 @@ class ChatView extends StatefulWidget {
 class _ChatViewState extends State<ChatView> {
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-        itemCount: widget.channel.chats.length,
-        itemBuilder: ((context, index) {
-          return ListTile(
-            title: Text(
-                "<${widget.channel.chats[index].from}> ${widget.channel.chats[index].msg}"),
-          );
-        }));
+    return ListView(
+      children: widget.channel.chats.map((e) => _chat(e)).toList(),
+    );
+  }
+
+  Widget _chat(Chat c) {
+    return ListTile(
+      title: Text("<${c.from}> ${c.msg}"),
+    );
   }
 }
