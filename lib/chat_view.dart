@@ -1,15 +1,11 @@
-import 'package:flutter/material.dart';
+import 'dart:developer';
 
-class Chat {
-  const Chat({required this.channel, required this.from, required this.msg});
-  final String channel;
-  final String from;
-  final String msg;
-}
+import 'package:flutter/material.dart';
+import 'package:irclone/structure.dart';
 
 class ChatView extends StatefulWidget {
-  const ChatView({Key? key, required this.logs}) : super(key: key);
-  final List<Chat> logs;
+  const ChatView({Key? key, required this.channel}) : super(key: key);
+  final Channel channel;
   @override
   State<ChatView> createState() => _ChatViewState();
 }
@@ -17,17 +13,13 @@ class ChatView extends StatefulWidget {
 class _ChatViewState extends State<ChatView> {
   @override
   Widget build(BuildContext context) {
-    List<ListTile> chats = [];
-    for (Chat c in widget.logs) {
-      chats.add(
-        ListTile(
-          title: Text("${c.channel} <${c.from}> ${c.msg}"),
-        ),
-      );
-    }
-
-    return ListView(
-      children: chats,
-    );
+    return ListView.builder(
+        itemCount: widget.channel.chats.length,
+        itemBuilder: ((context, index) {
+          return ListTile(
+            title: Text(
+                "<${widget.channel.chats[index].from}> ${widget.channel.chats[index].msg}"),
+          );
+        }));
   }
 }

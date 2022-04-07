@@ -1,16 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:html';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:irclone/chat_view.dart';
+import 'package:irclone/structure.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:web_socket_channel/io.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,7 +37,7 @@ class IrClone extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: "title",
+      title: "irClone",
       home: AuthGate(key: key),
     );
   }
@@ -113,7 +114,8 @@ class _ChatMainState extends State<ChatMain> {
   }
 
   String _currentChannel = "";
-  final Map<String, List<Chat>> _logs = {};
+  int _currentServer = 0;
+  final Map<int, Server> servers = {0: Server()};
 
   @override
   void initState() {
@@ -140,9 +142,53 @@ class _ChatMainState extends State<ChatMain> {
 
   @override
   Widget build(BuildContext context) {
-    List<ListTile> drawer = [];
-    for (var c in _logs.keys) {
-      drawer.add(ListTile(
+    return Scaffold(
+      drawer: Drawer(
+        child: _channelBuilder(context),
+      ),
+      appBar: AppBar(
+        title: Text(_currentChannel),
+        actions: [
+          IconButton(
+              onPressed: () {
+                FirebaseAuth.instance.signOut();
+              },
+              icon: const Icon(Icons.logout))
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Expanded(
+              child: _currentChannel.isEmpty
+                  ? Container()
+                  : ChatView(
+                      channel:
+                          servers[_currentServer]!.channels[_currentChannel]!),
+            ),
+            TextField(
+              controller: _controller,
+              onSubmitted: (text) {
+                _sendMessage();
+              },
+              decoration: InputDecoration(
+                  labelText: "Send a message",
+                  suffixIcon: IconButton(
+                      onPressed: _sendMessage, icon: const Icon(Icons.send))),
+            ),
+            Text(msgLog),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _channelBuilder(context) {
+    List<ListTile> children = [];
+    for (var c in servers[_currentServer]!.channels.keys) {
+      children.add(ListTile(
         title: Text(c),
         onTap: () {
           setState(() {
@@ -152,46 +198,8 @@ class _ChatMainState extends State<ChatMain> {
         },
       ));
     }
-
-    return Scaffold(
-      drawer: Drawer(
-        child: ListView(
-          children: drawer,
-        ),
-      ),
-      appBar: AppBar(
-        title: Text(_currentChannel),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            TextButton(
-              onPressed: () {
-                FirebaseAuth.instance.signOut();
-              },
-              child: const Text("sign out"),
-            ),
-            Form(
-              child: TextFormField(
-                controller: _controller,
-                decoration: const InputDecoration(labelText: 'Send a message'),
-              ),
-            ),
-            Expanded(
-              child: _currentChannel.isEmpty
-                  ? Container()
-                  : ChatView(logs: _logs[_currentChannel]!),
-            ),
-            Text(msgLog),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _sendMessage,
-        child: const Icon(Icons.send),
-      ),
+    return ListView(
+      children: children,
     );
   }
 
@@ -227,10 +235,11 @@ class _ChatMainState extends State<ChatMain> {
         break;
       case "getServers":
         for (var channel in json["data"]["channels"]) {
-          _logs[channel["channel"]] = [];
+          servers[_currentServer]!.channels[channel["channel"]] = Channel();
           if (_currentChannel.isEmpty) {
             setState(() {
-              _currentChannel = channel["channel"];
+              //_currentChannel = channel["channel"];
+              _currentChannel = "#erniea";
             });
           }
         }
@@ -243,30 +252,33 @@ class _ChatMainState extends State<ChatMain> {
         break;
       case "getInitLogs":
         for (var l in json["data"]["logs"]) {
-          _logs[l["channel"]]!.add(Chat(
-              channel: l["channel"], from: l["from"] ?? "", msg: l["message"]));
-          //log(l["from"]);
+          servers[_currentServer]!
+              .channels[l["channel"]]!
+              .chats
+              .add(Chat(from: l["from"] ?? "", msg: l["message"]));
         }
         break;
       case "pushLog":
       case "sendLog":
         var msg = json["data"]["log"];
         setState(() {
-          _logs[msg["channel"]]!.add(Chat(
-              channel: msg["channel"], from: msg["from"], msg: msg["message"]));
+          servers[_currentServer]!
+              .channels[msg["channel"]]!
+              .chats
+              .add(Chat(from: msg["from"], msg: msg["message"]));
         });
         break;
     }
 
     setState(() {
-      msgLog = event.toString();
+      //msgLog = json.toString();
     });
   }
 
   void _sendMessage() {
     if (_controller.text.isNotEmpty) {
       widget.channel.sink.add(
-          '{"type":"sendLog","data":{"server_id":2,"channel":"#erniea","message":"${_controller.text}"},"msg_id":${_getMsgId()}}');
+          '{"type":"sendLog","data":{"server_id":2,"channel":"$_currentChannel","message":"${_controller.text}"},"msg_id":${_getMsgId()}}');
       _controller.text = "";
     }
   }
