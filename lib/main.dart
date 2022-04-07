@@ -7,7 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:irclone/chat_view.dart';
+import 'package:irclone/view.dart';
 import 'package:irclone/structure.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -114,8 +114,10 @@ class _ChatMainState extends State<ChatMain> {
 
   String _currentChannel = "";
   int _currentServer = 0;
-  final Map<int, Server> servers = {0: Server()};
+  final Map<int, Server> _servers = {0: Server(myNick: "_kyubey")};
 
+  ScrollController _scrollController = ScrollController();
+  bool _needsScroll = false;
   @override
   void initState() {
     super.initState();
@@ -141,6 +143,10 @@ class _ChatMainState extends State<ChatMain> {
 
   @override
   Widget build(BuildContext context) {
+    if (_needsScroll) {
+      WidgetsBinding.instance?.addPostFrameCallback((_) => _scrollToEnd());
+      _needsScroll = false;
+    }
     return Scaffold(
       drawer: Drawer(
         child: _channelBuilder(context),
@@ -163,9 +169,10 @@ class _ChatMainState extends State<ChatMain> {
             Expanded(
               child: _currentChannel.isEmpty
                   ? Container()
-                  : ChatView(
+                  : ChannelView(
+                      controller: _scrollController,
                       channel:
-                          servers[_currentServer]!.channels[_currentChannel]!),
+                          _servers[_currentServer]!.channels[_currentChannel]!),
             ),
             TextField(
               controller: _controller,
@@ -185,7 +192,7 @@ class _ChatMainState extends State<ChatMain> {
 
   Widget _channelBuilder(context) {
     return ListView(
-      children: servers[_currentServer]!
+      children: _servers[_currentServer]!
           .channels
           .keys
           .map((e) => _channelElement(context, e))
@@ -200,6 +207,8 @@ class _ChatMainState extends State<ChatMain> {
         setState(() {
           _currentChannel = key;
         });
+        _needsScroll = true;
+
         Navigator.pop(context);
       },
     );
@@ -237,7 +246,7 @@ class _ChatMainState extends State<ChatMain> {
         break;
       case "getServers":
         for (var channel in json["data"]["channels"]) {
-          servers[_currentServer]!.channels[channel["channel"]] = Channel();
+          _servers[_currentServer]!.channels[channel["channel"]] = Channel();
           if (_currentChannel.isEmpty) {
             setState(() {
               //_currentChannel = channel["channel"];
@@ -250,29 +259,42 @@ class _ChatMainState extends State<ChatMain> {
           "data": {},
           "msg_id": _getMsgId()
         };
-        //_send(getInitLog);
+        _send(getInitLog);
         break;
       case "getInitLogs":
-        for (var l in json["data"]["logs"]) {
-          servers[_currentServer]!.channels[l["channel"]]!.chats.add(Chat(
-              timestamp: l["timestamp"],
-              from: l["from"] ?? "",
-              msg: l["message"]));
-        }
+        setState(() {
+          for (var msg in json["data"]["logs"]) {
+            _addMsg(msg);
+          }
+        });
+        _needsScroll = true;
         break;
       case "pushLog":
       case "sendLog":
         var msg = json["data"]["log"];
         setState(() {
-          servers[_currentServer]!.channels[msg["channel"]]!.chats.add(Chat(
-              timestamp: msg["timestamp"],
-              from: msg["from"],
-              msg: msg["message"]));
+          _addMsg(msg);
         });
+        _needsScroll = true;
         break;
     }
 
     log(json.toString());
+  }
+
+  void _addMsg(msg) {
+    _servers[_currentServer]!.channels[msg["channel"]]!.chats.add(
+          Chat(
+              timestamp: msg["timestamp"],
+              from: msg["from"] ?? "",
+              msg: msg["message"],
+              myMsg: msg["from"] == _servers[_currentServer]!.myNick),
+        );
+  }
+
+  void _scrollToEnd() {
+    _scrollController.animateTo(_scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 200), curve: Curves.easeInOut);
   }
 
   void _sendMessage() {

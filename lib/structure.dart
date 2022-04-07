@@ -1,11 +1,16 @@
 import 'dart:collection';
 
 class Chat {
-  const Chat({required this.timestamp, required this.from, required this.msg});
+  const Chat(
+      {required this.timestamp,
+      required this.from,
+      required this.msg,
+      required this.myMsg});
 
   final int timestamp;
   final String from;
   final String msg;
+  final bool myMsg;
 }
 
 class Channel {
@@ -13,5 +18,7 @@ class Channel {
 }
 
 class Server {
-  late Map<String, Channel> channels = {};
+  Server({required this.myNick});
+  final Map<String, Channel> channels = {};
+  final String myNick;
 }
