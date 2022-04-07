@@ -58,6 +58,11 @@ class ChatView extends StatelessWidget {
                 : Text(chat.from)),
         Row(
           children: [
+            chat.myMsg
+                ? Expanded(
+                    child: Container(),
+                  )
+                : Container(),
             chat.myMsg ? Text("${time.hour}:${time.minute}") : Container(),
             Bubble(
               margin: BubbleEdges.only(bottom: 10, left: sameFrom ? 8 : 0),
