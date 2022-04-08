@@ -28,7 +28,6 @@ class _ChannelViewState extends State<ChannelView> {
 
     String prevFrom = "";
     DateTime prevTime = DateTime.fromMicrosecondsSinceEpoch(0);
-    ChatView? prevCv = null;
     for (Chat c in chats) {
       bool sameFrom = (c.from == prevFrom);
       if (!sameFrom) {
@@ -38,7 +37,7 @@ class _ChannelViewState extends State<ChannelView> {
       var time = DateTime.fromMillisecondsSinceEpoch(c.timestamp);
       bool sameDay = (time.day == prevTime.day);
 
-      bool sameTime = sameFrom &&
+      bool sameTime =
           (time.hour == prevTime.hour && time.minute == prevTime.minute);
 
       if (!sameDay) {
@@ -160,19 +159,6 @@ class ChatView extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class DateView extends StatelessWidget {
-  const DateView({Key? key, required this.time}) : super(key: key);
-  final DateTime time;
-  @override
-  Widget build(BuildContext context) {
-    return Bubble(
-      alignment: Alignment.center,
-      color: const Color.fromRGBO(212, 234, 244, 1.0),
-      child: Text("${time.year}/${time.month}/${time.day}"),
     );
   }
 }
