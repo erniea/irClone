@@ -31,7 +31,7 @@ class _ChannelViewState extends State<ChannelView> {
     for (Chat c in chats) {
       bool sameFrom = (c.from == prevFrom);
       if (!sameFrom) {
-        prevFrom = c.from;
+        prevFrom = c.from ?? "";
       }
 
       var time = DateTime.fromMillisecondsSinceEpoch(c.timestamp);
@@ -77,7 +77,7 @@ class ChatView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var time = DateTime.fromMillisecondsSinceEpoch(chat.timestamp);
-    return chat.from.isEmpty
+    return chat.from == null
         ? _createEmptyBubbleMsg(time)
         : chat.myMsg
             ? _createMyBubbleMsg(time, sameFrom, sameTime)
@@ -145,7 +145,7 @@ class ChatView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sameFrom ? Container() : Text(chat.from),
+        sameFrom ? Container() : Text(chat.from!),
         Bubble(
           margin:
               BubbleEdges.only(bottom: 4, left: sameFrom && sameTime ? 8 : 0),

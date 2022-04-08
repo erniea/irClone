@@ -8,13 +8,20 @@ class Chat {
       required this.myMsg});
 
   final int timestamp;
-  final String from;
+  final String? from;
   final String msg;
   final bool myMsg;
 }
 
 class Channel {
   List<Chat> chats = [];
+}
+
+class ChannelForList {
+  const ChannelForList({required this.channelName, required this.serverId});
+
+  final String channelName;
+  final int serverId;
 }
 
 class Server {

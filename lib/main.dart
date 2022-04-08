@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:html';
+import 'dart:ui';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -114,8 +115,8 @@ class _ChatMainState extends State<ChatMain> {
 
   String _currentChannel = "";
   int _currentServer = 0;
-  final Map<int, Server> _servers = {0: Server(myNick: "_kyubey")};
-
+  final Map<int, Server> _servers = {};
+  final List<ChannelForList> _channelsForList = [];
   ScrollController _scrollController = ScrollController();
   bool _needsScroll = false;
   @override
@@ -167,7 +168,7 @@ class _ChatMainState extends State<ChatMain> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Expanded(
-              child: _currentChannel.isEmpty
+              child: _currentChannel.isEmpty || _servers[_currentServer] == null
                   ? Container()
                   : ChannelView(
                       controller: _scrollController,
@@ -192,20 +193,18 @@ class _ChatMainState extends State<ChatMain> {
 
   Widget _channelBuilder(context) {
     return ListView(
-      children: _servers[_currentServer]!
-          .channels
-          .keys
-          .map((e) => _channelElement(context, e))
-          .toList(),
+      children:
+          _channelsForList.map((e) => _channelElement(context, e)).toList(),
     );
   }
 
   Widget _channelElement(context, key) {
     return ListTile(
-      title: Text(key),
+      title: Text(key.channelName),
       onTap: () {
         setState(() {
-          _currentChannel = key;
+          _currentServer = key.serverId;
+          _currentChannel = key.channelName;
         });
         _needsScroll = true;
 
@@ -215,7 +214,7 @@ class _ChatMainState extends State<ChatMain> {
   }
 
   void _send(json) {
-    log(">>> " + json.toString());
+    log("<<< " + json.toString());
     widget.channel.sink.add(jsonEncode(json));
   }
 
@@ -245,11 +244,20 @@ class _ChatMainState extends State<ChatMain> {
         _send(reqServer);
         break;
       case "getServers":
+        for (var server in json["data"]["servers"]) {
+          _servers[server["id"]] = Server(myNick: server["user"]["nickname"]!);
+        }
         for (var channel in json["data"]["channels"]) {
-          _servers[_currentServer]!.channels[channel["channel"]] = Channel();
+          _servers[channel["server_id"]]!.channels[channel["channel"]] =
+              Channel();
+
+          _channelsForList.add(ChannelForList(
+              channelName: channel["channel"], serverId: channel["server_id"]));
+
           if (_currentChannel.isEmpty) {
             setState(() {
               //_currentChannel = channel["channel"];
+              _currentServer = 2;
               _currentChannel = "#erniea";
             });
           }
@@ -279,16 +287,16 @@ class _ChatMainState extends State<ChatMain> {
         break;
     }
 
-    log("<<< " + json.toString());
+    log(">>> " + json.toString());
   }
 
   void _addMsg(msg) {
-    _servers[_currentServer]!.channels[msg["channel"]]!.chats.add(
+    _servers[msg["server_id"]]!.channels[msg["channel"]]!.chats.add(
           Chat(
               timestamp: msg["timestamp"],
-              from: msg["from"] ?? "",
+              from: msg["from"],
               msg: msg["message"],
-              myMsg: msg["from"] == _servers[_currentServer]!.myNick),
+              myMsg: msg["from"] == _servers[msg["server_id"]]!.myNick),
         );
   }
 
@@ -299,8 +307,16 @@ class _ChatMainState extends State<ChatMain> {
 
   void _sendMessage() {
     if (_controller.text.isNotEmpty) {
-      widget.channel.sink.add(
-          '{"type":"sendLog","data":{"server_id":2,"channel":"$_currentChannel","message":"${_controller.text}"},"msg_id":${_getMsgId()}}');
+      var msg = {
+        "type": "sendLog",
+        "data": {
+          "server_id": _currentServer,
+          "channel": _currentChannel,
+          "message": _controller.text
+        },
+        "msg_id": _getMsgId()
+      };
+      _send(msg);
       _controller.text = "";
     }
   }
