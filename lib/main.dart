@@ -52,7 +52,6 @@ class AuthGate extends StatefulWidget {
 }
 
 class _AuthGateState extends State<AuthGate> {
-  String str = "test";
   String? accessToken;
   @override
   Widget build(BuildContext context) {
@@ -87,7 +86,7 @@ class _AuthGateState extends State<AuthGate> {
 
                   accessToken = auth?.accessToken;
                 },
-                child: const Text("sign in")),
+                child: const Text("google sign in")),
           );
         }
       },
@@ -115,9 +114,11 @@ class _ChatMainState extends State<ChatMain> {
 
   String _currentChannel = "";
   int _currentServer = 0;
+
   final Map<int, Server> _servers = {};
   final List<ChannelForList> _channelsForList = [];
-  ScrollController _scrollController = ScrollController();
+  final ScrollController _scrollController = ScrollController();
+
   bool _needsScroll = false;
   @override
   void initState() {
@@ -245,7 +246,8 @@ class _ChatMainState extends State<ChatMain> {
         break;
       case "getServers":
         for (var server in json["data"]["servers"]) {
-          _servers[server["id"]] = Server(myNick: server["user"]["nickname"]!);
+          _servers[server["id"]] = Server(
+              serverName: server["name"], myNick: server["user"]["nickname"]!);
         }
         for (var channel in json["data"]["channels"]) {
           _servers[channel["server_id"]]!.channels[channel["channel"]] =

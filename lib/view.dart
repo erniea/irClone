@@ -46,7 +46,7 @@ class _ChannelViewState extends State<ChannelView> {
           padding: const BubbleEdges.all(3),
           alignment: Alignment.center,
           color: const Color.fromRGBO(212, 234, 244, 1.0),
-          child: Text("${time.year}/${time.month}/${time.day}"),
+          child: Text(DateFormat.yMd().format(time)),
         ));
       }
       if (!sameTime) {
@@ -113,8 +113,7 @@ class ChatView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Bubble(
-          margin:
-              BubbleEdges.only(bottom: 4, right: sameFrom && sameTime ? 8 : 0),
+          margin: BubbleEdges.only(bottom: 4, right: sameTime ? 8 : 0),
           padding: const BubbleEdges.all(10),
           alignment: Alignment.topRight,
           nip: sameFrom && sameTime ? BubbleNip.no : BubbleNip.rightTop,
@@ -147,8 +146,7 @@ class ChatView extends StatelessWidget {
       children: [
         sameFrom ? Container() : Text(chat.from!),
         Bubble(
-          margin:
-              BubbleEdges.only(bottom: 4, left: sameFrom && sameTime ? 8 : 0),
+          margin: BubbleEdges.only(bottom: 4, left: sameTime ? 8 : 0),
           padding: const BubbleEdges.all(10),
           alignment: Alignment.topLeft,
           nip: sameFrom && sameTime ? BubbleNip.no : BubbleNip.leftTop,

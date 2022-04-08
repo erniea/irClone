@@ -25,7 +25,8 @@ class ChannelForList {
 }
 
 class Server {
-  Server({required this.myNick});
+  Server({required this.serverName, required this.myNick});
   final Map<String, Channel> channels = {};
+  final String serverName;
   final String myNick;
 }
