@@ -37,7 +37,7 @@ class _ChannelViewState extends State<ChannelView> {
       var time = DateTime.fromMillisecondsSinceEpoch(c.timestamp);
       bool sameDay = (time.day == prevTime.day);
 
-      bool sameTime =
+      bool sameTime = sameFrom &&
           (time.hour == prevTime.hour && time.minute == prevTime.minute);
 
       if (!sameDay) {
