@@ -215,7 +215,7 @@ class _ChatMainState extends State<ChatMain> {
   }
 
   void _send(json) {
-    log(json.toString());
+    log(">>> " + json.toString());
     widget.channel.sink.add(jsonEncode(json));
   }
 
@@ -279,7 +279,7 @@ class _ChatMainState extends State<ChatMain> {
         break;
     }
 
-    log(json.toString());
+    log("<<< " + json.toString());
   }
 
   void _addMsg(msg) {
