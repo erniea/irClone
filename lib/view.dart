@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:irclone/structure.dart';
 import 'package:bubble/bubble.dart';
 
@@ -26,12 +27,38 @@ class _ChannelViewState extends State<ChannelView> {
     List<Widget> result = [];
 
     String prevFrom = "";
+    DateTime prevTime = DateTime.fromMicrosecondsSinceEpoch(0);
+    ChatView? prevCv = null;
     for (Chat c in chats) {
       bool sameFrom = (c.from == prevFrom);
       if (!sameFrom) {
         prevFrom = c.from;
       }
-      result.add(ChatView(chat: c, sameFrom: sameFrom));
+
+      var time = DateTime.fromMillisecondsSinceEpoch(c.timestamp);
+      bool sameDay = (time.day == prevTime.day);
+
+      bool sameTime = sameFrom &&
+          (time.hour == prevTime.hour && time.minute == prevTime.minute);
+
+      if (!sameDay) {
+        result.add(Bubble(
+          margin: const BubbleEdges.only(top: 10),
+          padding: const BubbleEdges.all(3),
+          alignment: Alignment.center,
+          color: const Color.fromRGBO(212, 234, 244, 1.0),
+          child: Text("${time.year}/${time.month}/${time.day}"),
+        ));
+      }
+      if (!sameTime) {
+        prevTime = time;
+      }
+
+      result.add(ChatView(
+        chat: c,
+        sameFrom: sameFrom,
+        sameTime: sameTime,
+      ));
     }
 
     return result;
@@ -39,53 +66,113 @@ class _ChannelViewState extends State<ChannelView> {
 }
 
 class ChatView extends StatelessWidget {
-  const ChatView({Key? key, required this.chat, required this.sameFrom})
+  const ChatView(
+      {Key? key,
+      required this.chat,
+      required this.sameFrom,
+      required this.sameTime})
       : super(key: key);
   final Chat chat;
   final bool sameFrom;
+  final bool sameTime;
   @override
   Widget build(BuildContext context) {
     var time = DateTime.fromMillisecondsSinceEpoch(chat.timestamp);
+    return chat.from.isEmpty
+        ? _createEmptyBubbleMsg(time)
+        : chat.myMsg
+            ? _createMyBubbleMsg(time, sameFrom, sameTime)
+            : _createOtherBubbleMsg(time, sameFrom, sameTime);
+  }
+
+  Widget _createEmptyBubbleMsg(time) {
+    return Bubble(
+      stick: true,
+      margin: const BubbleEdges.only(top: 10),
+      padding: const BubbleEdges.all(3),
+      color: const Color.fromRGBO(212, 234, 244, 1.0),
+      child: Text(chat.msg, textAlign: TextAlign.center),
+    );
+  }
+
+  Widget _createMyBubbleMsg(time, sameFrom, sameTime) {
+    List<Widget> inColumnChildren = [];
+
+    if (!sameTime) {
+      inColumnChildren.add(Text(
+        DateFormat.Hm().format(time),
+        textAlign: TextAlign.right,
+        style: const TextStyle(fontSize: 10),
+      ));
+    }
+    inColumnChildren.add(SelectableText(
+      chat.msg,
+      style: const TextStyle(height: 1),
+    ));
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        chat.myMsg
-            ? Container()
-            : (sameFrom
-                ? Container(
-                    margin: EdgeInsets.only(left: 30),
-                  )
-                : Text(chat.from)),
-        Row(
-          children: [
-            chat.myMsg
-                ? Expanded(
-                    child: Container(),
-                  )
-                : Container(),
-            chat.myMsg ? Text("${time.hour}:${time.minute}") : Container(),
-            Bubble(
-              margin: BubbleEdges.only(bottom: 10, left: sameFrom ? 8 : 0),
-              alignment: chat.myMsg ? Alignment.topRight : Alignment.topLeft,
-              nip: sameFrom
-                  ? BubbleNip.no
-                  : (chat.myMsg ? BubbleNip.rightTop : BubbleNip.leftTop),
-              color: chat.myMsg
-                  ? const Color.fromRGBO(225, 255, 199, 1.0)
-                  : Colors.white,
-              child: SelectableText(chat.msg),
-            ),
-          ],
+        Bubble(
+          margin:
+              BubbleEdges.only(bottom: 4, right: sameFrom && sameTime ? 8 : 0),
+          padding: const BubbleEdges.all(10),
+          alignment: Alignment.topRight,
+          nip: sameFrom && sameTime ? BubbleNip.no : BubbleNip.rightTop,
+          color: const Color.fromRGBO(225, 255, 199, 1.0),
+          child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: inColumnChildren),
         ),
       ],
     );
+  }
 
-    return Row(
+  Widget _createOtherBubbleMsg(time, sameFrom, sameTime) {
+    List<Widget> inColumnChildren = [];
+    if (!sameTime) {
+      inColumnChildren.add(Text(
+        DateFormat.Hm().format(time),
+        textAlign: TextAlign.left,
+        style: const TextStyle(fontSize: 10),
+      ));
+    }
+
+    inColumnChildren.add(SelectableText(
+      chat.msg,
+      style: const TextStyle(height: 1),
+    ));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("<${chat.from}>"),
-        Expanded(child: Text(chat.msg)),
-        Text("${time.hour}:${time.minute}")
+        sameFrom ? Container() : Text(chat.from),
+        Bubble(
+          margin:
+              BubbleEdges.only(bottom: 4, left: sameFrom && sameTime ? 8 : 0),
+          padding: const BubbleEdges.all(10),
+          alignment: Alignment.topLeft,
+          nip: sameFrom && sameTime ? BubbleNip.no : BubbleNip.leftTop,
+          color: Colors.white,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: inColumnChildren,
+          ),
+        ),
       ],
+    );
+  }
+}
+
+class DateView extends StatelessWidget {
+  const DateView({Key? key, required this.time}) : super(key: key);
+  final DateTime time;
+  @override
+  Widget build(BuildContext context) {
+    return Bubble(
+      alignment: Alignment.center,
+      color: const Color.fromRGBO(212, 234, 244, 1.0),
+      child: Text("${time.year}/${time.month}/${time.day}"),
     );
   }
 }
