@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
-import 'dart:html';
 import 'dart:ui';
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -261,6 +260,9 @@ class _ChatMainState extends State<ChatMain> {
               channelName: channel["channel"], serverId: channel["server_id"]));
         }
 
+        _channelsForList.sort(
+          (a, b) => a.channelName.compareTo(b.channelName),
+        );
         // TODO: for debug
         setState(() {
           _currentServer = 2;
