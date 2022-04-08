@@ -255,15 +255,14 @@ class _ChatMainState extends State<ChatMain> {
 
           _channelsForList.add(ChannelForList(
               channelName: channel["channel"], serverId: channel["server_id"]));
-
-          if (_currentChannel.isEmpty) {
-            setState(() {
-              //_currentChannel = channel["channel"];
-              _currentServer = 2;
-              _currentChannel = "#erniea";
-            });
-          }
         }
+
+        // TODO: for debug
+        setState(() {
+          _currentServer = 2;
+          _currentChannel = "#erniea";
+        });
+
         var getInitLog = {
           "type": "getInitLogs",
           "data": {},
