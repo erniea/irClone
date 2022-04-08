@@ -169,7 +169,10 @@ class _ChatMainState extends State<ChatMain> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Expanded(
-              child: _currentChannel.isEmpty || _servers[_currentServer] == null
+              child: _currentChannel.isEmpty ||
+                      _servers[_currentServer] == null ||
+                      _servers[_currentServer]!.channels[_currentChannel] ==
+                          null
                   ? Container()
                   : ChannelView(
                       controller: _scrollController,
@@ -177,6 +180,7 @@ class _ChatMainState extends State<ChatMain> {
                           _servers[_currentServer]!.channels[_currentChannel]!),
             ),
             TextField(
+              autofocus: true,
               controller: _controller,
               onSubmitted: (text) {
                 _sendMessage();
