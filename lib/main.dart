@@ -52,6 +52,16 @@ class AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<AuthGate> {
   String? accessToken;
+
+  var googleSignIn = GoogleSignIn(
+    clientId:
+        "349437488054-apko0h450gts1nqpfe9g085qrkgn2b1h.apps.googleusercontent.com",
+    scopes: [
+      'https://www.googleapis.com/auth/userinfo.email',
+      'https://www.googleapis.com/auth/userinfo.profile',
+    ],
+  );
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder(
@@ -63,20 +73,12 @@ class _AuthGateState extends State<AuthGate> {
               Uri.parse("wss://beta.ircta.lk:443/irctalk"),
             ),
             accessToken: accessToken ?? "",
+            googleSignIn: googleSignIn,
           );
         } else {
           return Center(
             child: TextButton(
                 onPressed: () async {
-                  var googleSignIn = GoogleSignIn(
-                    clientId:
-                        "349437488054-apko0h450gts1nqpfe9g085qrkgn2b1h.apps.googleusercontent.com",
-                    scopes: [
-                      'https://www.googleapis.com/auth/userinfo.email',
-                      'https://www.googleapis.com/auth/userinfo.profile',
-                    ],
-                  );
-
                   var user = await googleSignIn.signIn();
                   var auth = await user?.authentication;
                   var cred = GoogleAuthProvider.credential(
@@ -96,8 +98,12 @@ class _AuthGateState extends State<AuthGate> {
 class ChatMain extends StatefulWidget {
   final WebSocketChannel channel;
   final String accessToken;
-
-  const ChatMain({Key? key, required this.channel, required this.accessToken})
+  final GoogleSignIn googleSignIn;
+  const ChatMain(
+      {Key? key,
+      required this.channel,
+      required this.accessToken,
+      required this.googleSignIn})
       : super(key: key);
 
   @override
@@ -157,6 +163,7 @@ class _ChatMainState extends State<ChatMain> {
         actions: [
           IconButton(
               onPressed: () {
+                widget.googleSignIn.signOut();
                 FirebaseAuth.instance.signOut();
               },
               icon: const Icon(Icons.logout))
