@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "349437488054-4d3p12cv8hf4bip7jlt8ua1r4sli432o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bargnbada.irclone",
+            "certificate_hash": "48de476fb006c7e493f31f620d47785f6c7058f7"
+          }
+        },
+        {
           "client_id": "349437488054-8bpauddguuhs7793logspcg3k3ttiu4e.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
