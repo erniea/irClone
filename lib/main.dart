@@ -11,6 +11,7 @@ import 'package:irclone/view.dart';
 import 'package:irclone/structure.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:web_socket_channel/io.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 Future<void> main() async {
@@ -69,9 +70,7 @@ class _AuthGateState extends State<AuthGate> {
       builder: (context, snapshot) {
         if (snapshot.hasData) {
           return ChatMain(
-            channel: WebSocketChannel.connect(
-              Uri.parse("wss://beta.ircta.lk:443/irctalk"),
-            ),
+            webSocketChannel: _createWebSocketChannel(),
             accessToken: accessToken ?? "",
             googleSignIn: googleSignIn,
           );
@@ -93,15 +92,27 @@ class _AuthGateState extends State<AuthGate> {
       },
     );
   }
+
+  WebSocketChannel _createWebSocketChannel() {
+    return kIsWeb
+        ? WebSocketChannel.connect(Uri.parse("wss://beta.ircta.lk:443/irctalk"))
+        : IOWebSocketChannel.connect(
+            Uri.parse("wss://beta.ircta.lk:443/irctalk"),
+            headers: {
+                'CLIENT_ID': 'android',
+                'connection': 'upgrade',
+                'upgrade': 'websocket'
+              });
+  }
 }
 
 class ChatMain extends StatefulWidget {
-  final WebSocketChannel channel;
+  final WebSocketChannel webSocketChannel;
   final String accessToken;
   final GoogleSignIn googleSignIn;
   const ChatMain(
       {Key? key,
-      required this.channel,
+      required this.webSocketChannel,
       required this.accessToken,
       required this.googleSignIn})
       : super(key: key);
@@ -128,7 +139,7 @@ class _ChatMainState extends State<ChatMain> {
   @override
   void initState() {
     super.initState();
-    widget.channel.stream.listen(_msgHandler);
+    widget.webSocketChannel.stream.listen(_msgHandler);
 
     SharedPreferences.getInstance().then(
       (value) {
@@ -226,7 +237,7 @@ class _ChatMainState extends State<ChatMain> {
 
   void _send(json) {
     log("<<< " + json.toString());
-    widget.channel.sink.add(jsonEncode(json));
+    widget.webSocketChannel.sink.add(jsonEncode(json));
   }
 
   void _tryLogin(authKey) {
@@ -337,7 +348,7 @@ class _ChatMainState extends State<ChatMain> {
 
   @override
   void dispose() {
-    widget.channel.sink.close();
+    widget.webSocketChannel.sink.close();
     super.dispose();
   }
 }
