@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.irclone">
+    package="com.bargnbada.irclone">
    <application
         android:label="irclone"
         android:name="${applicationName}"
