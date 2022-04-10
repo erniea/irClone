@@ -15,11 +15,24 @@ class ChannelView extends StatefulWidget {
 }
 
 class _ChannelViewState extends State<ChannelView> {
+  List<Widget> chatViewItems = [];
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return ListView(
+    chatViewItems = _createChatView(widget.channel.chats);
+
+    return ListView.builder(
       controller: widget.controller,
-      children: _createChatView(widget.channel.chats),
+      //children: _createChatView(widget.channel.chats),
+      itemBuilder: (c, i) => chatViewItems[chatViewItems.length - i - 1],
+      itemCount: chatViewItems.length,
+      reverse: true,
     );
   }
 

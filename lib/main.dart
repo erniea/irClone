@@ -269,12 +269,14 @@ class _ChatMainState extends State<ChatMain> {
           "msg_id": _getMsgId()
         };
         _send(reqServer);
+        Timer(Duration(seconds: json["data"]["keepalive"]), _sendPing);
         break;
       case "getServers":
         for (var server in json["data"]["servers"]) {
           _servers[server["id"]] = Server(
               serverName: server["name"], myNick: server["user"]["nickname"]!);
         }
+
         for (var channel in json["data"]["channels"]) {
           _servers[channel["server_id"]]!.channels[channel["channel"]] =
               Channel();
@@ -346,7 +348,7 @@ class _ChatMainState extends State<ChatMain> {
   }
 
   void _scrollToEnd() {
-    _scrollController.animateTo(_scrollController.position.maxScrollExtent,
+    _scrollController.animateTo(0,
         duration: const Duration(milliseconds: 200), curve: Curves.easeInOut);
   }
 
@@ -364,6 +366,12 @@ class _ChatMainState extends State<ChatMain> {
       _send(msg);
     }
     _controller.clear();
+  }
+
+  void _sendPing() {
+    var ping = {"type": "ping", "data": {}, "msg_id": _getMsgId()};
+
+    _send(ping);
   }
 
   @override
