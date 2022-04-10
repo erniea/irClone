@@ -127,7 +127,7 @@ class _ChatMainState extends State<ChatMain> {
   final Map<int, Server> _servers = {};
   final List<ChannelForList> _channelsForList = [];
   final ScrollController _scrollController = ScrollController();
-
+  final FocusNode _chatFocus = FocusNode();
   bool _needsScroll = false;
   @override
   void initState() {
@@ -158,6 +158,7 @@ class _ChatMainState extends State<ChatMain> {
       WidgetsBinding.instance?.addPostFrameCallback((_) => _scrollToEnd());
       _needsScroll = false;
     }
+
     return Scaffold(
       drawer: Drawer(
         child: _channelBuilder(context),
@@ -190,10 +191,12 @@ class _ChatMainState extends State<ChatMain> {
                           _servers[_currentServer]!.channels[_currentChannel]!),
             ),
             TextField(
-              autofocus: true,
               controller: _controller,
+              focusNode: _chatFocus,
+              textInputAction: TextInputAction.send,
               onSubmitted: (text) {
                 _sendMessage();
+                _chatFocus.requestFocus();
               },
               decoration: InputDecoration(
                   labelText: "Send a message",
@@ -215,8 +218,7 @@ class _ChatMainState extends State<ChatMain> {
 
   Widget _channelElement(context, e) {
     return ListTile(
-      title: Row(
-        children: [
+      title: Row(children: [
         Text(e.channelName),
         e.newMsg > 0
             ? Badge(
@@ -360,12 +362,15 @@ class _ChatMainState extends State<ChatMain> {
         "msg_id": _getMsgId()
       };
       _send(msg);
-      _controller.text = "";
     }
+    _controller.clear();
   }
 
   @override
   void dispose() {
+    _scrollController.dispose();
+    _chatFocus.dispose();
+
     widget.webSocketChannel.sink.close();
     super.dispose();
   }
