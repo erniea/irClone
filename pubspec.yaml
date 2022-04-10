@@ -41,6 +41,8 @@ dependencies:
   bubble: ^1.2.1
   intl: ^0.17.0
   badges: ^2.0.2
+  flutter_linkify: ^5.0.2
+  url_launcher: ^6.0.20
 
 dev_dependencies:
 

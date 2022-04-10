@@ -23,6 +23,7 @@ class ChannelForList {
   final String channelName;
   final int serverId;
   int newMsg = 0;
+  bool toMe = false;
 }
 
 class Server {

@@ -1,9 +1,11 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:intl/intl.dart';
 import 'package:irclone/structure.dart';
 import 'package:bubble/bubble.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ChannelView extends StatefulWidget {
   const ChannelView({Key? key, required this.channel, required this.controller})
@@ -87,6 +89,21 @@ class ChatView extends StatelessWidget {
   final Chat chat;
   final bool sameFrom;
   final bool sameTime;
+
+  static const nickColors = [
+    Color(0xff0000bb),
+    Color(0xff00bb00),
+    Color(0xffff5555),
+    Color(0xffbb0000),
+    Color(0xffbb00bb),
+    Color(0xffbbbb00),
+    Color(0xff55ff55),
+    Color(0xff00bbbb),
+    Color(0xff55ffff),
+    Color(0xff5555ff),
+    Color(0xffff55ff),
+  ];
+
   @override
   Widget build(BuildContext context) {
     var time = DateTime.fromMillisecondsSinceEpoch(chat.timestamp);
@@ -117,9 +134,10 @@ class ChatView extends StatelessWidget {
         style: const TextStyle(fontSize: 10),
       ));
     }
-    inColumnChildren.add(SelectableText(
-      chat.msg,
-      style: const TextStyle(height: 1),
+    inColumnChildren.add(SelectableLinkify(
+      onOpen: (link) => launch(link.url),
+      text: chat.msg,
+      options: const LinkifyOptions(humanize: false),
     ));
 
     return Column(
@@ -149,15 +167,30 @@ class ChatView extends StatelessWidget {
       ));
     }
 
-    inColumnChildren.add(SelectableText(
-      chat.msg,
-      style: const TextStyle(height: 1),
+    inColumnChildren.add(SelectableLinkify(
+      onOpen: (link) => launch(link.url),
+      text: chat.msg,
+      options: const LinkifyOptions(humanize: false),
     ));
+
+    Color myColor = Colors.blue;
+    if (!sameFrom && chat.from != null) {
+      int code = 0;
+      for (int i = 0; i < chat.from!.length; ++i) {
+        code += chat.from!.codeUnitAt(i);
+      }
+      myColor = nickColors[code % nickColors.length];
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sameFrom ? Container() : Text(chat.from!),
+        sameFrom
+            ? Container()
+            : Text(
+                chat.from!,
+                style: TextStyle(color: myColor),
+              ),
         Bubble(
           margin: BubbleEdges.only(bottom: 4, left: sameTime ? 8 : 0),
           padding: const BubbleEdges.all(10),

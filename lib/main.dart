@@ -223,7 +223,7 @@ class _ChatMainState extends State<ChatMain> {
         e.newMsg > 0
             ? Badge(
                 badgeContent: Text(e.newMsg.toString()),
-                badgeColor: Colors.amber,
+                badgeColor: e.toMe ? Colors.red : Colors.amber,
               )
             : Container(),
       ]),
@@ -232,6 +232,7 @@ class _ChatMainState extends State<ChatMain> {
           _currentServer = e.serverId;
           _currentChannel = e.channelName;
           e.newMsg = 0;
+          e.toMe = false;
         });
         _needsScroll = true;
 
@@ -341,6 +342,10 @@ class _ChatMainState extends State<ChatMain> {
           if (e.channelName == msg["channel"] &&
               e.serverId == msg["server_id"]) {
             ++e.newMsg;
+
+            if (msg["message"].contains(_servers[msg["server_id"]]?.myNick)) {
+              e.toMe = true;
+            }
           }
         }
       }
