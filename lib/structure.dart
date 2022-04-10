@@ -18,10 +18,11 @@ class Channel {
 }
 
 class ChannelForList {
-  const ChannelForList({required this.channelName, required this.serverId});
+  ChannelForList({required this.channelName, required this.serverId});
 
   final String channelName;
   final int serverId;
+  int newMsg = 0;
 }
 
 class Server {

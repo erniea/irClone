@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
-import 'dart:ui';
+import 'dart:developer' as dev;
 
+import 'package:badges/badges.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -11,7 +11,6 @@ import 'package:irclone/view.dart';
 import 'package:irclone/structure.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:web_socket_channel/io.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 Future<void> main() async {
@@ -94,15 +93,9 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   WebSocketChannel _createWebSocketChannel() {
-    return kIsWeb
-        ? WebSocketChannel.connect(Uri.parse("wss://beta.ircta.lk:443/irctalk"))
-        : IOWebSocketChannel.connect(
-            Uri.parse("wss://beta.ircta.lk:443/irctalk"),
-            headers: {
-                'CLIENT_ID': 'android',
-                'connection': 'upgrade',
-                'upgrade': 'websocket'
-              });
+    return WebSocketChannel.connect(
+      Uri.parse("wss://beta.ircta.lk:443/irctalk"),
+    );
   }
 }
 
@@ -220,13 +213,23 @@ class _ChatMainState extends State<ChatMain> {
     );
   }
 
-  Widget _channelElement(context, key) {
+  Widget _channelElement(context, e) {
     return ListTile(
-      title: Text(key.channelName),
+      title: Row(
+        children: [
+        Text(e.channelName),
+        e.newMsg > 0
+            ? Badge(
+                badgeContent: Text(e.newMsg.toString()),
+                badgeColor: Colors.amber,
+              )
+            : Container(),
+      ]),
       onTap: () {
         setState(() {
-          _currentServer = key.serverId;
-          _currentChannel = key.channelName;
+          _currentServer = e.serverId;
+          _currentChannel = e.channelName;
+          e.newMsg = 0;
         });
         _needsScroll = true;
 
@@ -236,7 +239,7 @@ class _ChatMainState extends State<ChatMain> {
   }
 
   void _send(json) {
-    log("<<< " + json.toString());
+    dev.log("<<< " + json.toString());
     widget.webSocketChannel.sink.add(jsonEncode(json));
   }
 
@@ -281,11 +284,14 @@ class _ChatMainState extends State<ChatMain> {
         _channelsForList.sort(
           (a, b) => a.channelName.compareTo(b.channelName),
         );
-        // TODO: for debug
-        setState(() {
-          _currentServer = 2;
-          _currentChannel = "#erniea";
-        });
+
+        {
+          // TODO: for debug
+          setState(() {
+            _currentServer = 2;
+            _currentChannel = "#erniea";
+          });
+        }
 
         var getInitLog = {
           "type": "getInitLogs",
@@ -297,7 +303,7 @@ class _ChatMainState extends State<ChatMain> {
       case "getInitLogs":
         setState(() {
           for (var msg in json["data"]["logs"]) {
-            _addMsg(msg);
+            _addMsg(msg, false);
           }
         });
         _needsScroll = true;
@@ -306,16 +312,16 @@ class _ChatMainState extends State<ChatMain> {
       case "sendLog":
         var msg = json["data"]["log"];
         setState(() {
-          _addMsg(msg);
+          _addMsg(msg, true);
         });
         _needsScroll = true;
         break;
     }
 
-    log(">>> " + json.toString());
+    dev.log(">>> " + json.toString());
   }
 
-  void _addMsg(msg) {
+  void _addMsg(msg, isNewMsg) {
     _servers[msg["server_id"]]!.channels[msg["channel"]]!.chats.add(
           Chat(
               timestamp: msg["timestamp"],
@@ -323,6 +329,18 @@ class _ChatMainState extends State<ChatMain> {
               msg: msg["message"],
               myMsg: msg["from"] == _servers[msg["server_id"]]!.myNick),
         );
+
+    if (isNewMsg) {
+      if (msg["channel"] != _currentChannel ||
+          msg["server_id"] != _currentServer) {
+        for (var e in _channelsForList) {
+          if (e.channelName == msg["channel"] &&
+              e.serverId == msg["server_id"]) {
+            ++e.newMsg;
+          }
+        }
+      }
+    }
   }
 
   void _scrollToEnd() {
