@@ -6,13 +6,15 @@ class Chat {
       required this.timestamp,
       required this.from,
       required this.msg,
-      required this.myMsg});
+      required this.myMsg,
+      required this.mentioned});
 
   final int logId;
   final int timestamp;
   final String? from;
   final String msg;
   final bool myMsg;
+  final bool mentioned;
 }
 
 class Channel {

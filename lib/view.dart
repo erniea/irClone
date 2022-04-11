@@ -208,7 +208,7 @@ class ChatView extends StatelessWidget {
           padding: const BubbleEdges.all(10),
           alignment: Alignment.topLeft,
           //nip: sameFrom && sameTime ? BubbleNip.no : BubbleNip.leftTop,
-          color: Colors.white,
+          color: chat.mentioned ? Colors.amberAccent : Colors.white,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: inColumnChildren,

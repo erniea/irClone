@@ -336,7 +336,9 @@ class _ChatMainState extends State<ChatMain> {
               timestamp: msg["timestamp"],
               from: msg["from"],
               msg: msg["message"],
-              myMsg: msg["from"] == _servers[msg["server_id"]]!.myNick),
+              myMsg: msg["from"] == _servers[msg["server_id"]]!.myNick,
+              mentioned:
+                  msg["message"].contains(_servers[msg["server_id"]]!.myNick)),
         );
 
     if (isNewMsg) {
