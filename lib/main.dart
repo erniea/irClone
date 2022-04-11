@@ -47,7 +47,6 @@ class _AuthGateState extends State<AuthGate> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     _googleSignIn.signInSilently();
   }
