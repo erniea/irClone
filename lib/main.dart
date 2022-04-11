@@ -271,6 +271,7 @@ class _ChatMainState extends State<ChatMain> {
   }
 
   void _reConnect() {
+    dev.log("reconnect");
     widget.webSocketChannel = createWebSocketChannel();
     widget.webSocketChannel.stream.listen(_msgHandler, onDone: _reConnect);
   }
