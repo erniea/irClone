@@ -114,6 +114,8 @@ class _ChatMainState extends State<ChatMain> {
   final ScrollController _scrollController = ScrollController();
   final FocusNode _chatFocus = FocusNode();
   bool _needsScroll = false;
+  int keepAlive = 0;
+
   @override
   void initState() {
     super.initState();
@@ -244,6 +246,9 @@ class _ChatMainState extends State<ChatMain> {
   void _msgHandler(event) async {
     var json = jsonDecode(event.toString());
     switch (json["type"]) {
+      case "ping":
+        _reservePing();
+        break;
       case "register":
         var sp = await SharedPreferences.getInstance();
         sp.setString("authKey", json["data"]["auth_key"]);
@@ -256,7 +261,8 @@ class _ChatMainState extends State<ChatMain> {
           "msg_id": _getMsgId()
         };
         _send(reqServer);
-        //Timer(Duration(seconds: json["data"]["keepalive"]), _sendPing);
+        keepAlive = json["data"]["keepalive"];
+        _reservePing();
         break;
       case "getServers":
         for (var server in json["data"]["servers"]) {
@@ -369,6 +375,12 @@ class _ChatMainState extends State<ChatMain> {
       _send(msg);
     }
     _controller.clear();
+  }
+
+  void _reservePing() {
+    if (keepAlive > 0) {
+      Timer(Duration(seconds: keepAlive), _sendPing);
+    }
   }
 
   void _sendPing() {
