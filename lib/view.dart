@@ -165,7 +165,7 @@ class ChatView extends StatelessWidget {
           margin: BubbleEdges.only(bottom: 4, right: sameTime ? 8 : 0),
           padding: const BubbleEdges.all(10),
           alignment: Alignment.topRight,
-          // nip: sameFrom && sameTime ? BubbleNip.no : BubbleNip.rightTop,
+          nip: sameFrom && sameTime ? BubbleNip.no : BubbleNip.rightTop,
           color: const Color.fromRGBO(225, 255, 199, 1.0),
           child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -215,7 +215,7 @@ class ChatView extends StatelessWidget {
           margin: BubbleEdges.only(bottom: 4, left: sameTime ? 8 : 0),
           padding: const BubbleEdges.all(10),
           alignment: Alignment.topLeft,
-          //nip: sameFrom && sameTime ? BubbleNip.no : BubbleNip.leftTop,
+          nip: sameFrom && sameTime ? BubbleNip.no : BubbleNip.leftTop,
           color: chat.mentioned ? Colors.amberAccent : Colors.white,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

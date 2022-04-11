@@ -161,7 +161,9 @@ class _ChatMainState extends State<ChatMain> {
           IconButton(
               onPressed: () {
                 widget.googleSignIn.signOut();
-                widget.googleSignIn.disconnect();
+                if (kIsWeb) {
+                  widget.googleSignIn.disconnect();
+                }
               },
               icon: const Icon(Icons.logout))
         ],
