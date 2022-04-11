@@ -39,18 +39,17 @@ class _ChannelViewState extends State<ChannelView> {
 
   @override
   Widget build(BuildContext context) {
-    chatViewItems = _createChatView(widget.channel.chats);
+    chatViewItems = _createChatView(context, widget.channel.chats);
 
     return ListView.builder(
       controller: widget.controller,
-      //children: _createChatView(widget.channel.chats),
       itemBuilder: (c, i) => chatViewItems[chatViewItems.length - i - 1],
       itemCount: chatViewItems.length,
       reverse: true,
     );
   }
 
-  List<Widget> _createChatView(List<Chat> chats) {
+  List<Widget> _createChatView(context, chats) {
     List<Widget> result = [];
 
     String prevFrom = "";
@@ -123,13 +122,13 @@ class ChatView extends StatelessWidget {
   Widget build(BuildContext context) {
     var time = DateTime.fromMillisecondsSinceEpoch(chat.timestamp);
     return chat.from == null
-        ? _createEmptyBubbleMsg(time)
+        ? _createEmptyBubbleMsg(context, time)
         : chat.myMsg
-            ? _createMyBubbleMsg(time, sameFrom, sameTime)
-            : _createOtherBubbleMsg(time, sameFrom, sameTime);
+            ? _createMyBubbleMsg(context, time, sameFrom, sameTime)
+            : _createOtherBubbleMsg(context, time, sameFrom, sameTime);
   }
 
-  Widget _createEmptyBubbleMsg(time) {
+  Widget _createEmptyBubbleMsg(context, time) {
     return Bubble(
       stick: true,
       margin: const BubbleEdges.only(top: 10),
@@ -142,7 +141,7 @@ class ChatView extends StatelessWidget {
     );
   }
 
-  Widget _createMyBubbleMsg(time, sameFrom, sameTime) {
+  Widget _createMyBubbleMsg(context, time, sameFrom, sameTime) {
     List<Widget> inColumnChildren = [];
 
     if (!sameTime) {
@@ -175,7 +174,7 @@ class ChatView extends StatelessWidget {
     );
   }
 
-  Widget _createOtherBubbleMsg(time, sameFrom, sameTime) {
+  Widget _createOtherBubbleMsg(context, time, sameFrom, sameTime) {
     List<Widget> inColumnChildren = [];
     if (!sameTime) {
       inColumnChildren.add(Text(

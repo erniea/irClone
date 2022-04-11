@@ -25,6 +25,7 @@ class IrClone extends StatelessWidget {
     return MaterialApp(
       title: "irClone",
       home: AuthGate(key: key),
+      theme: ThemeData(primarySwatch: Colors.grey),
     );
   }
 }
@@ -60,6 +61,12 @@ class _AuthGateState extends State<AuthGate> {
       stream: _googleSignIn.onCurrentUserChanged,
       builder: (context, snapshot) {
         if (snapshot.hasData) {
+          var account = snapshot.data as GoogleSignInAccount;
+          account.authentication.then((value) {
+            setState(() {
+              accessToken = value.accessToken;
+            });
+          });
           return accessToken == null
               ? Container()
               : ChatMain(
@@ -70,12 +77,8 @@ class _AuthGateState extends State<AuthGate> {
         } else {
           return Center(
             child: TextButton(
-                onPressed: () async {
-                  var user = await _googleSignIn.signIn();
-                  var auth = await user?.authentication;
-                  setState(() {
-                    accessToken = auth?.accessToken;
-                  });
+                onPressed: () {
+                  _googleSignIn.signIn();
                 },
                 child: const Text("google sign in")),
           );
@@ -209,35 +212,43 @@ class _ChatMainState extends State<ChatMain> {
   }
 
   Widget _channelBuilder(context) {
-    return ListView(
-      children:
-          _channelsForList.map((e) => _channelElement(context, e)).toList(),
+    return ListView.builder(
+      itemBuilder: _channelElement,
+      itemCount: _channelsForList.length + 1,
     );
   }
 
-  Widget _channelElement(context, e) {
-    return ListTile(
-      title: Row(children: [
-        Text(e.channelName),
-        e.newMsg > 0
-            ? Badge(
-                badgeContent: Text(e.newMsg.toString()),
-                badgeColor: e.toMe ? Colors.red : Colors.amber,
-              )
-            : Container(),
-      ]),
-      onTap: () {
-        setState(() {
-          _currentServer = e.serverId;
-          _currentChannel = e.channelName;
-          e.newMsg = 0;
-          e.toMe = false;
-        });
-        _needsScroll = true;
+  Widget _channelElement(context, i) {
+    if (i == 0) {
+      return DrawerHeader(
+        child: Container(),
+        decoration: BoxDecoration(color: Theme.of(context).primaryColor),
+      );
+    } else {
+      var e = _channelsForList[i];
+      return ListTile(
+        title: Row(children: [
+          Text(e.channelName),
+          e.newMsg > 0
+              ? Badge(
+                  badgeContent: Text(e.newMsg.toString()),
+                  badgeColor: e.toMe ? Colors.red : Colors.amber,
+                )
+              : Container(),
+        ]),
+        onTap: () {
+          setState(() {
+            _currentServer = e.serverId;
+            _currentChannel = e.channelName;
+            e.newMsg = 0;
+            e.toMe = false;
+          });
+          _needsScroll = true;
 
-        Navigator.pop(context);
-      },
-    );
+          Navigator.pop(context);
+        },
+      );
+    }
   }
 
   void _send(json) {
@@ -256,6 +267,9 @@ class _ChatMainState extends State<ChatMain> {
 
   void _msgHandler(event) async {
     var json = jsonDecode(event.toString());
+
+    dev.log(">>> " + json.toString());
+
     switch (json["type"]) {
       case "ping":
         _reservePing();
@@ -339,20 +353,18 @@ class _ChatMainState extends State<ChatMain> {
 
         break;
     }
-
-    dev.log(">>> " + json.toString());
   }
 
   void _addMsg(msg, isNewMsg) {
-    _servers[msg["server_id"]]!.channels[msg["channel"]]!.chats.add(
+    _servers[msg["server_id"]]?.channels[msg["channel"]]?.chats.add(
           Chat(
               logId: msg["log_id"],
               timestamp: msg["timestamp"],
               from: msg["from"],
               msg: msg["message"],
-              myMsg: msg["from"] == _servers[msg["server_id"]]!.myNick,
+              myMsg: msg["from"] == _servers[msg["server_id"]]?.myNick,
               mentioned:
-                  msg["message"].contains(_servers[msg["server_id"]]!.myNick)),
+                  msg["message"].contains(_servers[msg["server_id"]]?.myNick)),
         );
 
     if (isNewMsg) {
@@ -424,6 +436,7 @@ class _ChatMainState extends State<ChatMain> {
     _chatFocus.dispose();
 
     widget.webSocketChannel.sink.close();
+    dev.log("dispose");
     super.dispose();
   }
 }
