@@ -70,10 +70,13 @@ class _ChannelViewState extends State<ChannelView> {
       if (!sameDay) {
         result.add(Bubble(
           margin: const BubbleEdges.only(top: 10),
-          padding: const BubbleEdges.all(3),
+          padding: const BubbleEdges.all(5),
           alignment: Alignment.center,
           color: const Color.fromRGBO(212, 234, 244, 1.0),
-          child: Text(DateFormat.yMd().format(time)),
+          child: Text(
+            DateFormat.yMd().format(time),
+            style: const TextStyle(fontSize: 12),
+          ),
         ));
       }
       if (!sameTime) {
@@ -132,7 +135,10 @@ class ChatView extends StatelessWidget {
       margin: const BubbleEdges.only(top: 10),
       padding: const BubbleEdges.all(3),
       color: const Color.fromRGBO(212, 234, 244, 1.0),
-      child: Text(chat.msg, textAlign: TextAlign.center),
+      child: Text(
+        chat.msg,
+        textAlign: TextAlign.center,
+      ),
     );
   }
 
@@ -199,9 +205,11 @@ class ChatView extends StatelessWidget {
       children: [
         sameFrom
             ? Container()
-            : Text(
-                chat.from!,
-                style: TextStyle(color: myColor),
+            : Chip(
+                label: SelectableText(
+                  chat.from!,
+                ),
+                backgroundColor: myColor.withAlpha(33),
               ),
         Bubble(
           margin: BubbleEdges.only(bottom: 4, left: sameTime ? 8 : 0),
