@@ -309,7 +309,10 @@ class _ChatMainState extends State<ChatMain> {
         setState(() {
           _addMsg(msg, true);
         });
-        _needsScroll = true;
+        if (_scrollController.position.pixels ==
+            _scrollController.position.minScrollExtent) {
+          _needsScroll = true;
+        }
         break;
       case "getPastLogs":
         setState(() {
@@ -379,7 +382,7 @@ class _ChatMainState extends State<ChatMain> {
 
   void _reservePing() {
     if (keepAlive > 0) {
-      Timer(Duration(seconds: keepAlive), _sendPing);
+      Timer(Duration(seconds: (keepAlive - 800)), _sendPing);
     }
   }
 
