@@ -171,6 +171,7 @@ class _ChatMainState extends State<ChatMain> {
                           null
                   ? Container()
                   : ChannelView(
+                      getPastLog: _sendGetPastLog,
                       controller: _scrollController,
                       channel:
                           _servers[_currentServer]!.channels[_currentChannel]!),
@@ -306,6 +307,17 @@ class _ChatMainState extends State<ChatMain> {
         });
         _needsScroll = true;
         break;
+      case "getPastLogs":
+        setState(() {
+          for (var msg in json["data"]["logs"]) {
+            _addMsg(msg, false);
+          }
+          _servers[_currentServer]!.channels[_currentChannel]!.chats.sort(
+                (a, b) => a.logId - b.logId,
+              );
+        });
+
+        break;
     }
 
     dev.log(">>> " + json.toString());
@@ -314,6 +326,7 @@ class _ChatMainState extends State<ChatMain> {
   void _addMsg(msg, isNewMsg) {
     _servers[msg["server_id"]]!.channels[msg["channel"]]!.chats.add(
           Chat(
+              logId: msg["log_id"],
               timestamp: msg["timestamp"],
               from: msg["from"],
               msg: msg["message"],
@@ -362,6 +375,19 @@ class _ChatMainState extends State<ChatMain> {
     var ping = {"type": "ping", "data": {}, "msg_id": _getMsgId()};
 
     _send(ping);
+  }
+
+  void _sendGetPastLog(lasglogid) {
+    var getPastLogs = {
+      "type": "getPastLogs",
+      "data": {
+        "server_id": _currentServer,
+        "channel": _currentChannel,
+        "last_log_id": lasglogid
+      },
+      "msg_id": _getMsgId()
+    };
+    _send(getPastLogs);
   }
 
   @override

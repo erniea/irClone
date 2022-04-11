@@ -8,8 +8,13 @@ import 'package:bubble/bubble.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ChannelView extends StatefulWidget {
-  const ChannelView({Key? key, required this.channel, required this.controller})
+  const ChannelView(
+      {Key? key,
+      required this.getPastLog,
+      required this.channel,
+      required this.controller})
       : super(key: key);
+  final Function getPastLog;
   final Channel channel;
   final ScrollController controller;
   @override
@@ -21,8 +26,14 @@ class _ChannelViewState extends State<ChannelView> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
+
+    widget.controller.addListener(() {
+      if (widget.controller.position.pixels ==
+          widget.controller.position.maxScrollExtent) {
+        widget.getPastLog(widget.channel.chats[0].logId);
+      }
+    });
   }
 
   @override

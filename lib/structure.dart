@@ -2,11 +2,13 @@ import 'dart:collection';
 
 class Chat {
   const Chat(
-      {required this.timestamp,
+      {required this.logId,
+      required this.timestamp,
       required this.from,
       required this.msg,
       required this.myMsg});
 
+  final int logId;
   final int timestamp;
   final String? from;
   final String msg;
