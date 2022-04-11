@@ -13,8 +13,20 @@ import 'package:web_socket_channel/io.dart';
 
 import 'package:google_sign_in/google_sign_in.dart';
 
+final Uri ircTalk = Uri.parse("wss://beta.ircta.lk/irctalk");
+final Map<String, dynamic> headers = {"Origin": "https://beta.ircta.lk"};
+
 Future<void> main() async {
   runApp(const IrClone());
+}
+
+WebSocketChannel createWebSocketChannel() {
+  return kIsWeb
+      ? WebSocketChannel.connect(ircTalk)
+      : IOWebSocketChannel.connect(
+          ircTalk,
+          headers: headers,
+        );
 }
 
 class IrClone extends StatelessWidget {
@@ -62,15 +74,19 @@ class _AuthGateState extends State<AuthGate> {
       builder: (context, snapshot) {
         if (snapshot.hasData) {
           var account = snapshot.data as GoogleSignInAccount;
-          account.authentication.then((value) {
-            setState(() {
-              accessToken = value.accessToken;
+
+          if (accessToken == null) {
+            account.authentication.then((value) {
+              setState(() {
+                accessToken = value.accessToken;
+              });
             });
-          });
+          }
+
           return accessToken == null
               ? Container()
               : ChatMain(
-                  webSocketChannel: _createWebSocketChannel(),
+                  webSocketChannel: createWebSocketChannel(),
                   accessToken: accessToken ?? "",
                   googleSignIn: _googleSignIn,
                 );
@@ -86,23 +102,13 @@ class _AuthGateState extends State<AuthGate> {
       },
     );
   }
-
-  WebSocketChannel _createWebSocketChannel() {
-    var uri = Uri.parse("wss://beta.ircta.lk:443/irctalk");
-    return kIsWeb
-        ? WebSocketChannel.connect(uri)
-        : IOWebSocketChannel.connect(
-            uri,
-            headers: {"Origin": "https://beta.ircta.lk"},
-          );
-  }
 }
 
 class ChatMain extends StatefulWidget {
-  final WebSocketChannel webSocketChannel;
+  WebSocketChannel webSocketChannel;
   final String accessToken;
   final GoogleSignIn googleSignIn;
-  const ChatMain(
+  ChatMain(
       {Key? key,
       required this.webSocketChannel,
       required this.accessToken,
@@ -131,8 +137,7 @@ class _ChatMainState extends State<ChatMain> {
   @override
   void initState() {
     super.initState();
-    widget.webSocketChannel.stream.listen(_msgHandler);
-
+    widget.webSocketChannel.stream.listen(_msgHandler, onDone: _reConnect);
     SharedPreferences.getInstance().then(
       (value) {
         String? authKey = value.getString("authKey");
@@ -265,11 +270,15 @@ class _ChatMainState extends State<ChatMain> {
     _send(login);
   }
 
+  void _reConnect() {
+    widget.webSocketChannel = createWebSocketChannel();
+    widget.webSocketChannel.stream.listen(_msgHandler, onDone: _reConnect);
+  }
+
   void _msgHandler(event) async {
     var json = jsonDecode(event.toString());
 
     dev.log(">>> " + json.toString());
-
     switch (json["type"]) {
       case "ping":
         _reservePing();
