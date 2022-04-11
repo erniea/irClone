@@ -60,18 +60,22 @@ class _AuthGateState extends State<AuthGate> {
       stream: _googleSignIn.onCurrentUserChanged,
       builder: (context, snapshot) {
         if (snapshot.hasData) {
-          return ChatMain(
-            webSocketChannel: _createWebSocketChannel(),
-            accessToken: accessToken ?? "",
-            googleSignIn: _googleSignIn,
-          );
+          return accessToken == null
+              ? Container()
+              : ChatMain(
+                  webSocketChannel: _createWebSocketChannel(),
+                  accessToken: accessToken ?? "",
+                  googleSignIn: _googleSignIn,
+                );
         } else {
           return Center(
             child: TextButton(
                 onPressed: () async {
                   var user = await _googleSignIn.signIn();
                   var auth = await user?.authentication;
-                  accessToken = auth?.accessToken;
+                  setState(() {
+                    accessToken = auth?.accessToken;
+                  });
                 },
                 child: const Text("google sign in")),
           );
