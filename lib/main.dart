@@ -3,11 +3,14 @@ import 'dart:convert';
 import 'dart:developer' as dev;
 
 import 'package:badges/badges.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:irclone/view.dart';
 import 'package:irclone/structure.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:web_socket_channel/io.dart';
+
 import 'package:google_sign_in/google_sign_in.dart';
 
 Future<void> main() async {
@@ -78,9 +81,13 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   WebSocketChannel _createWebSocketChannel() {
-    return WebSocketChannel.connect(
-      Uri.parse("wss://beta.ircta.lk:443/irctalk"),
-    );
+    var uri = Uri.parse("wss://beta.ircta.lk:443/irctalk");
+    return kIsWeb
+        ? WebSocketChannel.connect(uri)
+        : IOWebSocketChannel.connect(
+            uri,
+            headers: {"Origin": "https://beta.ircta.lk"},
+          );
   }
 }
 
