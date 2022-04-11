@@ -3,9 +3,6 @@ import 'dart:convert';
 import 'dart:developer' as dev;
 
 import 'package:badges/badges.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:irclone/view.dart';
 import 'package:irclone/structure.dart';
@@ -14,20 +11,6 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  if (kIsWeb) {
-    await Firebase.initializeApp(
-        options: const FirebaseOptions(
-            apiKey: "AIzaSyCybtkNwPRTD4Gs4sm4uV-4alupyuG5LOA",
-            authDomain: "irclone.firebaseapp.com",
-            projectId: "irclone",
-            storageBucket: "irclone.appspot.com",
-            messagingSenderId: "349437488054",
-            appId: "1:349437488054:web:4e47dc40075d7d916fef17",
-            measurementId: "G-PS2W9E5BHF"));
-  } else {
-    await Firebase.initializeApp();
-  }
   runApp(const IrClone());
 }
 
@@ -53,7 +36,7 @@ class AuthGate extends StatefulWidget {
 class _AuthGateState extends State<AuthGate> {
   String? accessToken;
 
-  var googleSignIn = GoogleSignIn(
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
     clientId:
         "349437488054-apko0h450gts1nqpfe9g085qrkgn2b1h.apps.googleusercontent.com",
     scopes: [
@@ -63,26 +46,29 @@ class _AuthGateState extends State<AuthGate> {
   );
 
   @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _googleSignIn.signInSilently();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return StreamBuilder(
-      stream: FirebaseAuth.instance.authStateChanges(),
+      stream: _googleSignIn.onCurrentUserChanged,
       builder: (context, snapshot) {
         if (snapshot.hasData) {
           return ChatMain(
             webSocketChannel: _createWebSocketChannel(),
             accessToken: accessToken ?? "",
-            googleSignIn: googleSignIn,
+            googleSignIn: _googleSignIn,
           );
         } else {
           return Center(
             child: TextButton(
                 onPressed: () async {
-                  var user = await googleSignIn.signIn();
+                  var user = await _googleSignIn.signIn();
                   var auth = await user?.authentication;
-                  var cred = GoogleAuthProvider.credential(
-                      accessToken: auth?.accessToken, idToken: auth?.idToken);
-                  await FirebaseAuth.instance.signInWithCredential(cred);
-
                   accessToken = auth?.accessToken;
                 },
                 child: const Text("google sign in")),
@@ -169,7 +155,7 @@ class _ChatMainState extends State<ChatMain> {
           IconButton(
               onPressed: () {
                 widget.googleSignIn.signOut();
-                FirebaseAuth.instance.signOut();
+                widget.googleSignIn.disconnect();
               },
               icon: const Icon(Icons.logout))
         ],
@@ -270,7 +256,7 @@ class _ChatMainState extends State<ChatMain> {
           "msg_id": _getMsgId()
         };
         _send(reqServer);
-        Timer(Duration(seconds: json["data"]["keepalive"]), _sendPing);
+        //Timer(Duration(seconds: json["data"]["keepalive"]), _sendPing);
         break;
       case "getServers":
         for (var server in json["data"]["servers"]) {
