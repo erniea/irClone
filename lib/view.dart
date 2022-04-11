@@ -30,7 +30,8 @@ class _ChannelViewState extends State<ChannelView> {
 
     widget.controller.addListener(() {
       if (widget.controller.position.pixels ==
-          widget.controller.position.maxScrollExtent) {
+              widget.controller.position.maxScrollExtent &&
+          widget.channel.chats.isNotEmpty) {
         widget.getPastLog(widget.channel.chats[0].logId);
       }
     });
