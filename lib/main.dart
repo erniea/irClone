@@ -102,9 +102,7 @@ class ChatMain extends StatefulWidget {
 class _ChatMainState extends State<ChatMain> {
   final TextEditingController _controller = TextEditingController();
   int _msgId = 0;
-  int _getMsgId() {
-    return ++_msgId;
-  }
+  int _getMsgId() => ++_msgId;
 
   String _currentChannel = "";
   int _currentServer = 0;
