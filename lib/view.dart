@@ -118,8 +118,8 @@ class ChatView extends StatelessWidget {
     Color(0xff5555ff),
     Color(0xffff55ff),
   ];
-  final TextStyle chipStyle = const TextStyle(fontSize: 10);
-
+  final TextStyle chipStyle =
+      kIsWeb ? const TextStyle() : const TextStyle(fontSize: 10);
   final TextStyle timeStyle = kIsWeb
       ? const TextStyle(fontSize: 10, color: Colors.grey)
       : const TextStyle(fontSize: 8, color: Colors.grey);
