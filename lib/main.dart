@@ -137,7 +137,10 @@ class _ChatMainState extends State<ChatMain> {
   @override
   void initState() {
     super.initState();
-    widget.webSocketChannel.stream.listen(_msgHandler, onDone: _reConnect);
+    widget.webSocketChannel.stream.listen(
+      _msgHandler,
+      onDone: _reConnect,
+    );
     SharedPreferences.getInstance().then(
       (value) {
         String? authKey = value.getString("authKey");
@@ -164,8 +167,20 @@ class _ChatMainState extends State<ChatMain> {
     }
 
     return Scaffold(
-      drawer: Drawer(
-        child: _channelBuilder(context),
+      drawer: ChannelDrawer(
+        servers: _servers,
+        channels: _channelsForList,
+        onChannelSelected: (server, channel) {
+          setState(() {
+            _currentServer = server;
+            _currentChannel = channel;
+            _needsScroll = true;
+          });
+        },
+        addChannelToServer: (server, channel) =>
+            _addChannelToServer(server, channel),
+        currentServer: _currentServer,
+        currentChannel: _currentChannel,
       ),
       appBar: AppBar(
         title: Text(_currentChannel),
@@ -216,46 +231,6 @@ class _ChatMainState extends State<ChatMain> {
     );
   }
 
-  Widget _channelBuilder(context) {
-    return ListView.builder(
-      itemBuilder: _channelElement,
-      itemCount: _channelsForList.length + 1,
-    );
-  }
-
-  Widget _channelElement(context, i) {
-    if (i == 0) {
-      return DrawerHeader(
-        child: Container(),
-        decoration: BoxDecoration(color: Theme.of(context).primaryColor),
-      );
-    } else {
-      var e = _channelsForList[i - 1];
-      return ListTile(
-        title: Row(children: [
-          Text(e.channelName),
-          e.newMsg > 0
-              ? Badge(
-                  badgeContent: Text(e.newMsg.toString()),
-                  badgeColor: e.toMe ? Colors.red : Colors.amber,
-                )
-              : Container(),
-        ]),
-        onTap: () {
-          setState(() {
-            _currentServer = e.serverId;
-            _currentChannel = e.channelName;
-            e.newMsg = 0;
-            e.toMe = false;
-          });
-          _needsScroll = true;
-
-          Navigator.pop(context);
-        },
-      );
-    }
-  }
-
   void _send(json) {
     dev.log("<<< " + json.toString());
     widget.webSocketChannel.sink.add(jsonEncode(json));
@@ -271,9 +246,9 @@ class _ChatMainState extends State<ChatMain> {
   }
 
   void _reConnect() {
-    dev.log("reconnect");
-    widget.webSocketChannel = createWebSocketChannel();
-    widget.webSocketChannel.stream.listen(_msgHandler, onDone: _reConnect);
+//    dev.log("reconnect");
+//    widget.webSocketChannel = createWebSocketChannel();
+//    widget.webSocketChannel.stream.listen(_msgHandler, onDone: _reConnect);
   }
 
   void _msgHandler(event) async {
@@ -301,16 +276,11 @@ class _ChatMainState extends State<ChatMain> {
         break;
       case "getServers":
         for (var server in json["data"]["servers"]) {
-          _servers[server["id"]] = Server(
-              serverName: server["name"], myNick: server["user"]["nickname"]!);
+          _addServer(server);
         }
 
         for (var channel in json["data"]["channels"]) {
-          _servers[channel["server_id"]]!.channels[channel["channel"]] =
-              Channel();
-
-          _channelsForList.add(ChannelForList(
-              channelName: channel["channel"], serverId: channel["server_id"]));
+          _addChannel(channel);
         }
 
         _channelsForList.sort(
@@ -363,6 +333,29 @@ class _ChatMainState extends State<ChatMain> {
 
         break;
     }
+  }
+
+  void _addServer(server) {
+    _servers[server["id"]] =
+        Server(serverName: server["name"], myNick: server["user"]["nickname"]!);
+  }
+
+  void _addChannelToServer(server, channel) {
+    if (channel.isNotEmpty) {
+      if (channel[0] != "#") {
+        channel = "#" + channel;
+      }
+      if (channel.length > 1) {
+        dev.log(channel);
+      }
+    }
+  }
+
+  void _addChannel(channel) {
+    _servers[channel["server_id"]]!.channels[channel["channel"]] = Channel();
+
+    _channelsForList.add(ChannelForList(
+        channelName: channel["channel"], serverId: channel["server_id"]));
   }
 
   void _addMsg(msg, isNewMsg) {

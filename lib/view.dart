@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:badges/badges.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
@@ -235,5 +236,143 @@ class ChatView extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+class ChannelDrawer extends StatefulWidget {
+  const ChannelDrawer({
+    Key? key,
+    required this.servers,
+    required this.channels,
+    required this.onChannelSelected,
+    required this.sendAddChannelToServer,
+    required this.currentServer,
+    required this.currentChannel,
+  }) : super(key: key);
+  final Map<int, Server> servers;
+  final List<ChannelForList> channels;
+  final Function onChannelSelected;
+  final Function sendAddChannelToServer;
+  final int currentServer;
+  final String currentChannel;
+  @override
+  State<ChannelDrawer> createState() => _ChannelDrawerState();
+}
+
+class _ChannelDrawerState extends State<ChannelDrawer> {
+  @override
+  Widget build(BuildContext context) {
+    List<Widget> widgetList = [];
+
+    widgetList.add(DrawerHeader(
+      child: Column(
+        children: [
+          Expanded(child: Container()),
+          Row(
+            children: [
+              Expanded(child: Container()),
+              ElevatedButton(
+                child: const Icon(Icons.add_link),
+                onPressed: () {
+                  Navigator.pop(context);
+                  _popupAddServer(context);
+                },
+                style: ElevatedButton.styleFrom(shape: const CircleBorder()),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ));
+
+    int prevServerId = -1;
+    for (ChannelForList c in widget.channels) {
+      if (c.serverId != prevServerId) {
+        prevServerId = c.serverId;
+
+        widgetList.add(ListTile(
+          tileColor: Theme.of(context).focusColor,
+          title: Row(children: [
+            Expanded(child: Text(widget.servers[c.serverId]!.serverName)),
+            ElevatedButton(
+              child: const Icon(Icons.add),
+              onPressed: () {
+                Navigator.pop(context);
+                _popupAddChannel(context, c.serverId,
+                    widget.servers[c.serverId]!.serverName);
+              },
+              style: ElevatedButton.styleFrom(shape: const CircleBorder()),
+            ),
+          ]),
+        ));
+      }
+      widgetList.add(ListTile(
+        title: Row(children: [
+          Text(
+            c.channelName,
+            style: TextStyle(
+                fontWeight: c.serverId == widget.currentServer &&
+                        c.channelName == widget.currentChannel
+                    ? FontWeight.bold
+                    : FontWeight.normal),
+          ),
+          c.newMsg > 0
+              ? Badge(
+                  badgeContent: Text(c.newMsg.toString()),
+                  badgeColor: c.toMe ? Colors.red : Colors.amber,
+                )
+              : Container(),
+        ]),
+        onTap: () {
+          widget.onChannelSelected(c.serverId, c.channelName);
+          setState(() {
+            c.newMsg = 0;
+            c.toMe = false;
+          });
+
+          Navigator.pop(context);
+        },
+      ));
+    }
+
+    return Drawer(
+        child: ListView.builder(
+      itemBuilder: (context, i) => widgetList[i],
+      itemCount: widgetList.length,
+    ));
+  }
+
+  void _popupAddServer(context) {}
+
+  void _popupAddChannel(context, serverId, serverName) {
+    TextEditingController controller = TextEditingController(text: "#");
+    showDialog(
+        barrierDismissible: false,
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.0)),
+            title: Text("Add a Channel to " + serverName),
+            content: Column(mainAxisSize: MainAxisSize.min, children: [
+              TextField(
+                controller: controller,
+              ),
+            ]),
+            actions: [
+              TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: const Text("Cancel")),
+              ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    widget.sendAddChannelToServer(serverId, controller.text);
+                  },
+                  child: const Text("OK"))
+            ],
+          );
+        });
   }
 }
