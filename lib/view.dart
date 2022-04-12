@@ -345,79 +345,11 @@ class _ChannelDrawerState extends State<ChannelDrawer> {
   }
 
   void _popupAddServer(context) {
-    TextEditingController serverName = TextEditingController(),
-        serverAddress = TextEditingController(),
-        serverPort = TextEditingController(),
-        nickName = TextEditingController(),
-        realName = TextEditingController();
-    bool useSSL = false;
     showDialog(
         context: context,
         builder: (context) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0)),
-            title: const Text("Add a Server"),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text("Server"),
-                TextField(
-                  controller: serverName,
-                  decoration: const InputDecoration(labelText: "Server Name"),
-                ),
-                TextField(
-                  controller: serverAddress,
-                  decoration:
-                      const InputDecoration(labelText: "Server Address"),
-                ),
-                TextField(
-                  controller: serverPort,
-                  decoration: const InputDecoration(labelText: "Server Port"),
-                ),
-                Row(
-                  children: [
-                    const Expanded(child: Text("Use SSL")),
-                    Switch(
-                      value: useSSL,
-                      onChanged: (c) {
-                        log("message");
-                        useSSL = c;
-                      },
-                    )
-                  ],
-                ),
-                const Text("User"),
-                TextField(
-                  controller: nickName,
-                  decoration: const InputDecoration(labelText: "Nickname"),
-                ),
-                TextField(
-                  controller: realName,
-                  decoration: const InputDecoration(labelText: "Real Name"),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: const Text("Cancel")),
-              ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    widget.sendAddServer(
-                      serverName.text,
-                      serverAddress.text,
-                      serverPort.text,
-                      useSSL,
-                      nickName.text,
-                      realName.text,
-                    );
-                  },
-                  child: const Text("OK"))
-            ],
+          return ServerSettingDlg(
+            sendAddServer: widget.sendAddServer,
           );
         });
   }
@@ -451,5 +383,104 @@ class _ChannelDrawerState extends State<ChannelDrawer> {
             ],
           );
         });
+  }
+}
+
+class ServerSettingDlg extends StatefulWidget {
+  const ServerSettingDlg({Key? key, required this.sendAddServer})
+      : super(key: key);
+
+  final Function sendAddServer;
+  @override
+  _ServerSettingDlgState createState() => _ServerSettingDlgState();
+}
+
+class _ServerSettingDlgState extends State<ServerSettingDlg> {
+  TextEditingController serverName = TextEditingController(),
+      serverAddress = TextEditingController(text: "evans.uriirc.org"),
+      serverPort = TextEditingController(text: "16661"),
+      nickName = TextEditingController(),
+      realName = TextEditingController();
+  bool useSSL = true;
+
+  @override
+  void dispose() {
+    serverName.dispose();
+    serverAddress.dispose();
+    serverPort.dispose();
+    nickName.dispose();
+    realName.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+      title: const Text("Add a Server"),
+      content: Form(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Server"),
+            TextFormField(
+              controller: serverName,
+              decoration: const InputDecoration(labelText: "Server Name"),
+            ),
+            TextFormField(
+              controller: serverAddress,
+              decoration: const InputDecoration(labelText: "Server Address"),
+            ),
+            TextFormField(
+              controller: serverPort,
+              decoration: const InputDecoration(labelText: "Server Port"),
+            ),
+            Row(
+              children: [
+                const Expanded(child: Text("Use SSL")),
+                Switch(
+                  value: useSSL,
+                  onChanged: (c) {
+                    setState(() {
+                      useSSL = c;
+                    });
+                  },
+                )
+              ],
+            ),
+            const Text("User"),
+            TextFormField(
+              controller: nickName,
+              decoration: const InputDecoration(labelText: "Nickname"),
+            ),
+            TextFormField(
+              controller: realName,
+              decoration: const InputDecoration(labelText: "Real Name"),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text("Cancel")),
+        ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              widget.sendAddServer(
+                serverName.text,
+                serverAddress.text,
+                serverPort.text,
+                useSSL,
+                nickName.text,
+                realName.text,
+              );
+            },
+            child: const Text("OK"))
+      ],
+    );
+    ;
   }
 }
