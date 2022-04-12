@@ -5,6 +5,7 @@ import 'dart:developer' as dev;
 import 'package:badges/badges.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:irclone/view.dart';
 import 'package:irclone/structure.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -105,10 +106,11 @@ class _AuthGateState extends State<AuthGate> {
 }
 
 class ChatMain extends StatefulWidget {
-  final WebSocketChannel webSocketChannel;
+  WebSocketChannel webSocketChannel;
   final String accessToken;
   final GoogleSignIn googleSignIn;
-  const ChatMain(
+
+  ChatMain(
       {Key? key,
       required this.webSocketChannel,
       required this.accessToken,
@@ -134,28 +136,42 @@ class _ChatMainState extends State<ChatMain> {
   bool _needsScroll = false;
   int keepAlive = 0;
 
+  bool _needReconnect = false;
+  late StreamSubscription<FGBGType> _fgbg;
+
+  void _fgbgHandler(event) {
+    dev.log(event.toString());
+    if (event == FGBGType.foreground && _needReconnect) {
+      dev.log("reconnect");
+      SharedPreferences.getInstance().then((sp) {
+        _initWetSocket(sp.getString("authKey"));
+      });
+
+      _needReconnect = false;
+    }
+  }
+
+  void _initWetSocket(authKey) {
+    widget.webSocketChannel.stream.listen(_msgHandler, onDone: () {
+      _needReconnect = true;
+    }, onError: (e) {
+      _needReconnect = true;
+    });
+
+    if (authKey == null || authKey.isEmpty) {
+      _register();
+    } else {
+      _tryLogin(authKey);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    widget.webSocketChannel.stream.listen(
-      _msgHandler,
-    );
-    SharedPreferences.getInstance().then(
-      (value) {
-        String? authKey = value.getString("authKey");
-
-        if (authKey == null || authKey.isEmpty) {
-          var register = {
-            "type": "register",
-            "data": {"access_token": widget.accessToken},
-            "msg_id": _getMsgId(),
-          };
-          _send(register);
-        } else {
-          _tryLogin(authKey);
-        }
-      },
-    );
+    _fgbg = FGBGEvents.stream.listen(_fgbgHandler);
+    SharedPreferences.getInstance().then((sp) {
+      _initWetSocket(sp.getString("authKey"));
+    });
   }
 
   @override
@@ -241,6 +257,15 @@ class _ChatMainState extends State<ChatMain> {
   void _send(json) {
     dev.log("<<< " + json.toString());
     widget.webSocketChannel.sink.add(jsonEncode(json));
+  }
+
+  void _register() {
+    var register = {
+      "type": "register",
+      "data": {"access_token": widget.accessToken},
+      "msg_id": _getMsgId(),
+    };
+    _send(register);
   }
 
   void _tryLogin(authKey) {
@@ -449,7 +474,7 @@ class _ChatMainState extends State<ChatMain> {
   void dispose() {
     _scrollController.dispose();
     _chatFocus.dispose();
-
+    _fgbg.cancel();
     widget.webSocketChannel.sink.close();
     dev.log("dispose");
     super.dispose();
