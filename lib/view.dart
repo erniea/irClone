@@ -377,20 +377,20 @@ class ServerSettingDlg extends StatefulWidget {
 }
 
 class _ServerSettingDlgState extends State<ServerSettingDlg> {
-  TextEditingController serverName = TextEditingController(),
-      serverAddress = TextEditingController(text: "evans.uriirc.org"),
-      serverPort = TextEditingController(text: "16661"),
-      nickName = TextEditingController(),
-      realName = TextEditingController();
+  final TextEditingController _serverName = TextEditingController(),
+      _serverAddress = TextEditingController(text: "evans.uriirc.org"),
+      _serverPort = TextEditingController(text: "16661"),
+      _nickName = TextEditingController(),
+      _realName = TextEditingController();
   bool useSSL = true;
 
   @override
   void dispose() {
-    serverName.dispose();
-    serverAddress.dispose();
-    serverPort.dispose();
-    nickName.dispose();
-    realName.dispose();
+    _serverName.dispose();
+    _serverAddress.dispose();
+    _serverPort.dispose();
+    _nickName.dispose();
+    _realName.dispose();
     super.dispose();
   }
 
@@ -405,15 +405,15 @@ class _ServerSettingDlgState extends State<ServerSettingDlg> {
           children: [
             const Text("Server"),
             TextFormField(
-              controller: serverName,
+              controller: _serverName,
               decoration: const InputDecoration(labelText: "Server Name"),
             ),
             TextFormField(
-              controller: serverAddress,
+              controller: _serverAddress,
               decoration: const InputDecoration(labelText: "Server Address"),
             ),
             TextFormField(
-              controller: serverPort,
+              controller: _serverPort,
               decoration: const InputDecoration(labelText: "Server Port"),
             ),
             Row(
@@ -431,11 +431,11 @@ class _ServerSettingDlgState extends State<ServerSettingDlg> {
             ),
             const Text("User"),
             TextFormField(
-              controller: nickName,
+              controller: _nickName,
               decoration: const InputDecoration(labelText: "Nickname"),
             ),
             TextFormField(
-              controller: realName,
+              controller: _realName,
               decoration: const InputDecoration(labelText: "Real Name"),
             ),
           ],
@@ -451,12 +451,12 @@ class _ServerSettingDlgState extends State<ServerSettingDlg> {
             onPressed: () {
               Navigator.pop(context);
               widget.sendAddServer(
-                serverName.text,
-                serverAddress.text,
-                serverPort.text,
+                _serverName.text,
+                _serverAddress.text,
+                _serverPort.text,
                 useSSL,
-                nickName.text,
-                realName.text,
+                _nickName.text,
+                _realName.text,
               );
             },
             child: const Text("OK"))
