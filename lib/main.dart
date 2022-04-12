@@ -105,10 +105,10 @@ class _AuthGateState extends State<AuthGate> {
 }
 
 class ChatMain extends StatefulWidget {
-  WebSocketChannel webSocketChannel;
+  final WebSocketChannel webSocketChannel;
   final String accessToken;
   final GoogleSignIn googleSignIn;
-  ChatMain(
+  const ChatMain(
       {Key? key,
       required this.webSocketChannel,
       required this.accessToken,
