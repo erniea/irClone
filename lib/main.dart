@@ -137,28 +137,24 @@ class _ChatMainState extends State<ChatMain> {
   int keepAlive = 0;
 
   late StreamSubscription<FGBGType> _fgbg;
-
+  Timer? checkPing = null;
   void _fgbgHandler(event) {
     dev.log(event.toString());
-    if (widget.webSocketChannel is IOWebSocketChannel) {
-      int readyState = (widget.webSocketChannel as IOWebSocketChannel)
-          .innerWebSocket!
-          .readyState;
 
-      dev.log(readyState.toString());
+    if (event == FGBGType.foreground) {
+      checkPing = Timer(const Duration(milliseconds: 300), () {
+        widget.webSocketChannel = createWebSocketChannel();
 
-      if (event == FGBGType.foreground && readyState != WebSocket.open) {
-        dev.log("reconnect");
         SharedPreferences.getInstance().then((sp) {
           _initWebSocket(sp.getString("authKey"));
         });
-      }
+      });
+      _sendPing();
     }
   }
 
   void _initWebSocket(authKey) {
     widget.webSocketChannel.stream.listen(_msgHandler);
-
     if (authKey == null || authKey.isEmpty) {
       _register();
     } else {
@@ -284,7 +280,12 @@ class _ChatMainState extends State<ChatMain> {
     dev.log(">>> " + json.toString());
     switch (json["type"]) {
       case "ping":
-        _reservePing();
+        if (checkPing != null) {
+          checkPing!.cancel();
+          checkPing = null;
+        } else {
+          _reservePing();
+        }
         break;
       case "register":
         var sp = await SharedPreferences.getInstance();
@@ -306,6 +307,7 @@ class _ChatMainState extends State<ChatMain> {
           _addServer(server);
         }
 
+        _channelsForList.clear();
         for (var channel in json["data"]["channels"]) {
           _addChannel(channel);
         }
