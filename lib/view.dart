@@ -355,32 +355,13 @@ class _ChannelDrawerState extends State<ChannelDrawer> {
   }
 
   void _popupAddChannel(context, serverId, serverName) {
-    TextEditingController controller = TextEditingController(text: "#");
     showDialog(
         context: context,
         builder: (context) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0)),
-            title: Text("Add a Channel to " + serverName),
-            content: Column(mainAxisSize: MainAxisSize.min, children: [
-              TextField(
-                controller: controller,
-              ),
-            ]),
-            actions: [
-              TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: const Text("Cancel")),
-              ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    widget.sendAddChannelToServer(serverId, controller.text);
-                  },
-                  child: const Text("OK"))
-            ],
+          return ChannelSettingDlg(
+            serverName: serverName,
+            serverId: serverId,
+            sendAddChannelToServer: widget.sendAddChannelToServer,
           );
         });
   }
@@ -481,6 +462,73 @@ class _ServerSettingDlgState extends State<ServerSettingDlg> {
             child: const Text("OK"))
       ],
     );
-    ;
+  }
+}
+
+class ChannelSettingDlg extends StatefulWidget {
+  const ChannelSettingDlg(
+      {Key? key,
+      required this.serverName,
+      required this.serverId,
+      required this.sendAddChannelToServer})
+      : super(key: key);
+  final String serverName;
+  final int serverId;
+  final Function sendAddChannelToServer;
+  @override
+  _ChannelSettingDlgState createState() => _ChannelSettingDlgState();
+}
+
+class _ChannelSettingDlgState extends State<ChannelSettingDlg> {
+  final TextEditingController _controller = TextEditingController(text: "#");
+  final _formKey = GlobalKey<FormState>();
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+      title: Text("Add a Channel to " + widget.serverName),
+      content: Form(
+        key: _formKey,
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextFormField(
+            controller: _controller,
+            validator: (s) {
+              if (s == null || s.isEmpty) {
+                return "채널 이름을 입력해 주세요.";
+              }
+              if (s[0] != '#') {
+                return "채널 이름은 #으로 시작해야 합니다.";
+              }
+              if (s.length == 1) {
+                return "채널 이름을 입력해 주세요";
+              }
+              return null;
+            },
+          ),
+        ]),
+      ),
+      actions: [
+        TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text("Cancel")),
+        ElevatedButton(
+            onPressed: () async {
+              if (_formKey.currentState!.validate()) {
+                Navigator.pop(context);
+                widget.sendAddChannelToServer(
+                    widget.serverId, _controller.text);
+              }
+            },
+            child: const Text("OK"))
+      ],
+    );
   }
 }

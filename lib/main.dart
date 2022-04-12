@@ -351,13 +351,16 @@ class _ChatMainState extends State<ChatMain> {
         channel = "#" + channel;
       }
       if (channel.length > 1) {
-        dev.log(channel);
+        _notImpl();
       }
     }
   }
 
   void _sendAddServer(
-      serverName, serverAddress, serverPort, useSSL, nickName, realName) {}
+      serverName, serverAddress, serverPort, useSSL, nickName, realName) {
+    _notImpl();
+  }
+
   void _addChannel(channel) {
     _servers[channel["server_id"]]!.channels[channel["channel"]] = Channel();
 
@@ -450,5 +453,21 @@ class _ChatMainState extends State<ChatMain> {
     widget.webSocketChannel.sink.close();
     dev.log("dispose");
     super.dispose();
+  }
+
+  void _notImpl() {
+    showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text("Not implemented yet"),
+            content: const Text("아직 구현되지 않은 기능입니다"),
+            actions: [
+              ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("OK"))
+            ],
+          );
+        });
   }
 }
