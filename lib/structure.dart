@@ -1,5 +1,3 @@
-import 'dart:collection';
-
 class Chat {
   const Chat(
       {required this.logId,

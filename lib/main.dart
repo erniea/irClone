@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as dev;
 
-import 'package:badges/badges.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
@@ -144,14 +143,14 @@ class _ChatMainState extends State<ChatMain> {
     if (event == FGBGType.foreground && _needReconnect) {
       dev.log("reconnect");
       SharedPreferences.getInstance().then((sp) {
-        _initWetSocket(sp.getString("authKey"));
+        _initWebSocket(sp.getString("authKey"));
       });
 
       _needReconnect = false;
     }
   }
 
-  void _initWetSocket(authKey) {
+  void _initWebSocket(authKey) {
     widget.webSocketChannel.stream.listen(_msgHandler, onDone: () {
       _needReconnect = true;
     }, onError: (e) {
@@ -170,7 +169,7 @@ class _ChatMainState extends State<ChatMain> {
     super.initState();
     _fgbg = FGBGEvents.stream.listen(_fgbgHandler);
     SharedPreferences.getInstance().then((sp) {
-      _initWetSocket(sp.getString("authKey"));
+      _initWebSocket(sp.getString("authKey"));
     });
   }
 
