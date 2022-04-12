@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:intl/intl.dart';
@@ -117,6 +118,13 @@ class ChatView extends StatelessWidget {
     Color(0xff5555ff),
     Color(0xffff55ff),
   ];
+  final TextStyle chipStyle = const TextStyle(fontSize: 10);
+
+  final TextStyle timeStyle = kIsWeb
+      ? const TextStyle(fontSize: 10, color: Colors.grey)
+      : const TextStyle(fontSize: 8, color: Colors.grey);
+  final TextStyle textStyle =
+      kIsWeb ? const TextStyle() : const TextStyle(fontSize: 18);
 
   @override
   Widget build(BuildContext context) {
@@ -137,6 +145,7 @@ class ChatView extends StatelessWidget {
       child: Text(
         chat.msg,
         textAlign: TextAlign.center,
+        style: chipStyle,
       ),
     );
   }
@@ -148,13 +157,14 @@ class ChatView extends StatelessWidget {
       inColumnChildren.add(Text(
         DateFormat.Hm().format(time),
         textAlign: TextAlign.right,
-        style: const TextStyle(fontSize: 10),
+        style: timeStyle,
       ));
     }
     inColumnChildren.add(SelectableLinkify(
       onOpen: (link) => launch(link.url),
       text: chat.msg,
       options: const LinkifyOptions(humanize: false),
+      style: textStyle,
     ));
 
     return Column(
@@ -180,7 +190,7 @@ class ChatView extends StatelessWidget {
       inColumnChildren.add(Text(
         DateFormat.Hm().format(time),
         textAlign: TextAlign.left,
-        style: const TextStyle(fontSize: 10),
+        style: timeStyle,
       ));
     }
 
@@ -188,6 +198,7 @@ class ChatView extends StatelessWidget {
       onOpen: (link) => launch(link.url),
       text: chat.msg,
       options: const LinkifyOptions(humanize: false),
+      style: textStyle,
     ));
 
     Color myColor = Colors.blue;
@@ -207,6 +218,7 @@ class ChatView extends StatelessWidget {
             : Chip(
                 label: SelectableText(
                   chat.from!,
+                  style: chipStyle,
                 ),
                 backgroundColor: myColor.withAlpha(33),
               ),
