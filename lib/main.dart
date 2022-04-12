@@ -177,8 +177,8 @@ class _ChatMainState extends State<ChatMain> {
             _needsScroll = true;
           });
         },
-        addChannelToServer: (server, channel) =>
-            _addChannelToServer(server, channel),
+        sendAddChannelToServer: (server, channel) =>
+            _sendAddChannelToServer(server, channel),
         currentServer: _currentServer,
         currentChannel: _currentChannel,
       ),
@@ -340,7 +340,7 @@ class _ChatMainState extends State<ChatMain> {
         Server(serverName: server["name"], myNick: server["user"]["nickname"]!);
   }
 
-  void _addChannelToServer(server, channel) {
+  void _sendAddChannelToServer(server, channel) {
     if (channel.isNotEmpty) {
       if (channel[0] != "#") {
         channel = "#" + channel;
