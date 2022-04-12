@@ -182,6 +182,10 @@ class _ChatMainState extends State<ChatMain> {
         },
         sendAddChannelToServer: (server, channel) =>
             _sendAddChannelToServer(server, channel),
+        sendAddServer: (serverName, serverAddress, serverPort, useSSL, nickName,
+                realName) =>
+            _sendAddServer(serverName, serverAddress, serverPort, useSSL,
+                nickName, realName),
         currentServer: _currentServer,
         currentChannel: _currentChannel,
       ),
@@ -352,6 +356,8 @@ class _ChatMainState extends State<ChatMain> {
     }
   }
 
+  void _sendAddServer(
+      serverName, serverAddress, serverPort, useSSL, nickName, realName) {}
   void _addChannel(channel) {
     _servers[channel["server_id"]]!.channels[channel["channel"]] = Channel();
 

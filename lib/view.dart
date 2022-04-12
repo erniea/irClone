@@ -246,6 +246,7 @@ class ChannelDrawer extends StatefulWidget {
     required this.channels,
     required this.onChannelSelected,
     required this.sendAddChannelToServer,
+    required this.sendAddServer,
     required this.currentServer,
     required this.currentChannel,
   }) : super(key: key);
@@ -253,6 +254,7 @@ class ChannelDrawer extends StatefulWidget {
   final List<ChannelForList> channels;
   final Function onChannelSelected;
   final Function sendAddChannelToServer;
+  final Function sendAddServer;
   final int currentServer;
   final String currentChannel;
   @override
@@ -342,12 +344,87 @@ class _ChannelDrawerState extends State<ChannelDrawer> {
     ));
   }
 
-  void _popupAddServer(context) {}
+  void _popupAddServer(context) {
+    TextEditingController serverName = TextEditingController(),
+        serverAddress = TextEditingController(),
+        serverPort = TextEditingController(),
+        nickName = TextEditingController(),
+        realName = TextEditingController();
+    bool useSSL = false;
+    showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.0)),
+            title: const Text("Add a Server"),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text("Server"),
+                TextField(
+                  controller: serverName,
+                  decoration: const InputDecoration(labelText: "Server Name"),
+                ),
+                TextField(
+                  controller: serverAddress,
+                  decoration:
+                      const InputDecoration(labelText: "Server Address"),
+                ),
+                TextField(
+                  controller: serverPort,
+                  decoration: const InputDecoration(labelText: "Server Port"),
+                ),
+                Row(
+                  children: [
+                    const Expanded(child: Text("Use SSL")),
+                    Switch(
+                      value: useSSL,
+                      onChanged: (c) {
+                        log("message");
+                        useSSL = c;
+                      },
+                    )
+                  ],
+                ),
+                const Text("User"),
+                TextField(
+                  controller: nickName,
+                  decoration: const InputDecoration(labelText: "Nickname"),
+                ),
+                TextField(
+                  controller: realName,
+                  decoration: const InputDecoration(labelText: "Real Name"),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: const Text("Cancel")),
+              ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    widget.sendAddServer(
+                      serverName.text,
+                      serverAddress.text,
+                      serverPort.text,
+                      useSSL,
+                      nickName.text,
+                      realName.text,
+                    );
+                  },
+                  child: const Text("OK"))
+            ],
+          );
+        });
+  }
 
   void _popupAddChannel(context, serverId, serverName) {
     TextEditingController controller = TextEditingController(text: "#");
     showDialog(
-        barrierDismissible: false,
         context: context,
         builder: (context) {
           return AlertDialog(
