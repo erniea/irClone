@@ -175,6 +175,10 @@ class _ChatMainState extends State<ChatMain> {
             _currentChannel = channel;
             _needsScroll = true;
           });
+          SharedPreferences.getInstance().then((sp) {
+            sp.setInt("server", _currentServer);
+            sp.setString("channel", _currentChannel);
+          });
         },
         sendAddChannelToServer: (server, channel) =>
             _sendAddChannelToServer(server, channel),
@@ -281,11 +285,15 @@ class _ChatMainState extends State<ChatMain> {
         );
 
         {
-          // TODO: for debug
-          setState(() {
-            _currentServer = 2;
-            _currentChannel = "#erniea";
-          });
+          var sp = await SharedPreferences.getInstance();
+          String? channel = sp.getString("channel");
+
+          if (channel != null && channel.isNotEmpty) {
+            setState(() {
+              _currentServer = sp.getInt("server")!;
+              _currentChannel = channel;
+            });
+          }
         }
 
         var getInitLog = {
@@ -381,8 +389,10 @@ class _ChatMainState extends State<ChatMain> {
   }
 
   void _scrollToEnd() {
-    _scrollController.animateTo(0,
-        duration: const Duration(milliseconds: 200), curve: Curves.easeInOut);
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(0,
+          duration: const Duration(milliseconds: 200), curve: Curves.easeInOut);
+    }
   }
 
   void _sendMessage() {
