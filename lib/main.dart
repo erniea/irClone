@@ -230,7 +230,7 @@ class _ChatMainState extends State<ChatMain> {
         decoration: BoxDecoration(color: Theme.of(context).primaryColor),
       );
     } else {
-      var e = _channelsForList[i];
+      var e = _channelsForList[i - 1];
       return ListTile(
         title: Row(children: [
           Text(e.channelName),
