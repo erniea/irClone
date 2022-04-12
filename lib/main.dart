@@ -135,26 +135,26 @@ class _ChatMainState extends State<ChatMain> {
   bool _needsScroll = false;
   int keepAlive = 0;
 
-  bool _needReconnect = false;
+  bool _needsReconnect = false;
   late StreamSubscription<FGBGType> _fgbg;
 
   void _fgbgHandler(event) {
     dev.log(event.toString());
-    if (event == FGBGType.foreground && _needReconnect) {
+    if (event == FGBGType.foreground && _needsReconnect) {
       dev.log("reconnect");
       SharedPreferences.getInstance().then((sp) {
         _initWebSocket(sp.getString("authKey"));
       });
 
-      _needReconnect = false;
+      _needsReconnect = false;
     }
   }
 
   void _initWebSocket(authKey) {
     widget.webSocketChannel.stream.listen(_msgHandler, onDone: () {
-      _needReconnect = true;
+      _needsReconnect = true;
     }, onError: (e) {
-      _needReconnect = true;
+      _needsReconnect = true;
     });
 
     if (authKey == null || authKey.isEmpty) {
