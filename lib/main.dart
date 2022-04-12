@@ -139,7 +139,6 @@ class _ChatMainState extends State<ChatMain> {
     super.initState();
     widget.webSocketChannel.stream.listen(
       _msgHandler,
-      onDone: _reConnect,
     );
     SharedPreferences.getInstance().then(
       (value) {
@@ -243,12 +242,6 @@ class _ChatMainState extends State<ChatMain> {
       "msg_id": _getMsgId()
     };
     _send(login);
-  }
-
-  void _reConnect() {
-//    dev.log("reconnect");
-//    widget.webSocketChannel = createWebSocketChannel();
-//    widget.webSocketChannel.stream.listen(_msgHandler, onDone: _reConnect);
   }
 
   void _msgHandler(event) async {
