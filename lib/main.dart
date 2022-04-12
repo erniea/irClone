@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as dev;
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -135,27 +136,28 @@ class _ChatMainState extends State<ChatMain> {
   bool _needsScroll = false;
   int keepAlive = 0;
 
-  bool _needsReconnect = false;
   late StreamSubscription<FGBGType> _fgbg;
 
   void _fgbgHandler(event) {
     dev.log(event.toString());
-    if (event == FGBGType.foreground && _needsReconnect) {
-      dev.log("reconnect");
-      SharedPreferences.getInstance().then((sp) {
-        _initWebSocket(sp.getString("authKey"));
-      });
+    if (widget.webSocketChannel is IOWebSocketChannel) {
+      int readyState = (widget.webSocketChannel as IOWebSocketChannel)
+          .innerWebSocket!
+          .readyState;
 
-      _needsReconnect = false;
+      dev.log(readyState.toString());
+
+      if (event == FGBGType.foreground && readyState != WebSocket.open) {
+        dev.log("reconnect");
+        SharedPreferences.getInstance().then((sp) {
+          _initWebSocket(sp.getString("authKey"));
+        });
+      }
     }
   }
 
   void _initWebSocket(authKey) {
-    widget.webSocketChannel.stream.listen(_msgHandler, onDone: () {
-      _needsReconnect = true;
-    }, onError: (e) {
-      _needsReconnect = true;
-    });
+    widget.webSocketChannel.stream.listen(_msgHandler);
 
     if (authKey == null || authKey.isEmpty) {
       _register();
