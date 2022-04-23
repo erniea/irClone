@@ -134,7 +134,7 @@ class _ChatMainState extends State<ChatMain> {
       androidNotificationOptions: AndroidNotificationOptions(
         channelId: "bargnbada.irclone",
         channelName: "irClone Notification",
-        channelDescription: "irCLone is running.",
+        channelDescription: "irClone is running.",
         channelImportance: NotificationChannelImportance.LOW,
         priority: NotificationPriority.LOW,
         iconData: const NotificationIconData(
