@@ -2,10 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as dev;
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_fgbg/flutter_fgbg.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:irclone/irctalk.dart';
+import 'package:irclone/task.dart';
 import 'package:irclone/view.dart';
 import 'package:irclone/structure.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,20 +17,8 @@ import 'package:web_socket_channel/io.dart';
 
 import 'package:google_sign_in/google_sign_in.dart';
 
-final Uri ircTalk = Uri.parse("wss://beta.ircta.lk/irctalk");
-final Map<String, dynamic> headers = {"Origin": "https://beta.ircta.lk"};
-
 Future<void> main() async {
   runApp(const IrClone());
-}
-
-WebSocketChannel createWebSocketChannel() {
-  return kIsWeb
-      ? WebSocketChannel.connect(ircTalk)
-      : IOWebSocketChannel.connect(
-          ircTalk,
-          headers: headers,
-        );
 }
 
 class IrClone extends StatelessWidget {
@@ -37,7 +28,7 @@ class IrClone extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: "irClone",
-      home: AuthGate(key: key),
+      home: WithForegroundTask(child: AuthGate(key: key)),
       theme: ThemeData(primarySwatch: Colors.grey),
     );
   }
@@ -87,7 +78,6 @@ class _AuthGateState extends State<AuthGate> {
           return accessToken == null
               ? Container()
               : ChatMain(
-                  webSocketChannel: createWebSocketChannel(),
                   accessToken: accessToken ?? "",
                   googleSignIn: _googleSignIn,
                 );
@@ -105,16 +95,17 @@ class _AuthGateState extends State<AuthGate> {
   }
 }
 
+void startCallback() {
+  // The setTaskHandler function must be called to handle the task in the background.
+  FlutterForegroundTask.setTaskHandler(WebSocketTask());
+}
+
 class ChatMain extends StatefulWidget {
-  WebSocketChannel webSocketChannel;
   final String accessToken;
   final GoogleSignIn googleSignIn;
 
-  ChatMain(
-      {Key? key,
-      required this.webSocketChannel,
-      required this.accessToken,
-      required this.googleSignIn})
+  const ChatMain(
+      {Key? key, required this.accessToken, required this.googleSignIn})
       : super(key: key);
 
   @override
@@ -123,8 +114,6 @@ class ChatMain extends StatefulWidget {
 
 class _ChatMainState extends State<ChatMain> {
   final TextEditingController _controller = TextEditingController();
-  int _msgId = 0;
-  int _getMsgId() => ++_msgId;
 
   String _currentChannel = "";
   int _currentServer = 0;
@@ -136,38 +125,96 @@ class _ChatMainState extends State<ChatMain> {
   bool _needsScroll = false;
   int keepAlive = 0;
 
-  late StreamSubscription<FGBGType> _fgbg;
-  Timer? checkPing = null;
-  void _fgbgHandler(event) {
-    dev.log(event.toString());
+  ReceivePort? _receivePort;
 
-    if (event == FGBGType.foreground) {
-      checkPing = Timer(const Duration(milliseconds: 300), () {
-        widget.webSocketChannel = createWebSocketChannel();
+  SendPort? _sendPort;
+  IrcTalk? _ircTalk;
 
-        SharedPreferences.getInstance().then((sp) {
-          _initWebSocket(sp.getString("authKey"));
-        });
-      });
-      _sendPing();
-    }
+  Future<void> _initForegroundTask() async {
+    await FlutterForegroundTask.init(
+      androidNotificationOptions: AndroidNotificationOptions(
+        channelId: "bargnbada.irclone",
+        channelName: "irClone Notification",
+        channelDescription: "irCLone is running.",
+        channelImportance: NotificationChannelImportance.LOW,
+        priority: NotificationPriority.LOW,
+        iconData: const NotificationIconData(
+          resType: ResourceType.mipmap,
+          resPrefix: ResourcePrefix.ic,
+          name: "launcher",
+        ),
+      ),
+      iosNotificationOptions: const IOSNotificationOptions(
+        showNotification: true,
+        playSound: false,
+      ),
+      foregroundTaskOptions: const ForegroundTaskOptions(
+        interval: 5000,
+        autoRunOnBoot: true,
+        allowWifiLock: true,
+      ),
+      printDevLog: true,
+    );
   }
 
-  void _initWebSocket(authKey) {
-    widget.webSocketChannel.stream.listen(_msgHandler);
-    if (authKey == null || authKey.isEmpty) {
-      _register();
+  Future<bool> _startForegroundTask() async {
+    ReceivePort? receivePort;
+    if (await FlutterForegroundTask.isRunningService) {
+      receivePort = await FlutterForegroundTask.restartService();
     } else {
-      _tryLogin(authKey);
+      receivePort = await FlutterForegroundTask.startService(
+        notificationTitle: "irClone is running",
+        notificationText: "Tap to return to the app",
+        callback: startCallback,
+      );
     }
+
+    if (receivePort != null) {
+      _receivePort = receivePort;
+      _receivePort?.listen((message) {
+        if (message is SendPort) {
+          _sendPort = message;
+
+          SharedPreferences.getInstance().then((sp) {
+            _sendPort?.send({
+              "taskType": "init",
+              "accessToken": widget.accessToken,
+              "authKey": sp.getString("authKey")
+            });
+          });
+        } else if (message is Map<String, dynamic>) {
+          switch (message["taskType"]) {
+            case "storeAuth":
+              _storeAuth(message["authKey"]);
+              break;
+            case "raw":
+              _msgHandler(message["data"]);
+              break;
+          }
+        }
+      });
+      return true;
+    }
+
+    return false;
   }
 
   @override
   void initState() {
     super.initState();
-    _fgbg = FGBGEvents.stream.listen(_fgbgHandler);
     SharedPreferences.getInstance().then((sp) {
-      _initWebSocket(sp.getString("authKey"));
+      int? timeout = sp.getInt("timeout");
+      if (timeout == null || timeout < DateTime.now().millisecondsSinceEpoch) {
+        sp.setString("authKey", "");
+      }
+
+      if (kIsWeb) {
+        _ircTalk = IrcTalk(storeAuth: _storeAuth, msgHandler: _msgHandler);
+        _ircTalk?.createWebSocketChannel();
+        _ircTalk?.initWebSocket(widget.accessToken, sp.getString("authKey"));
+      } else {
+        _initForegroundTask().then((value) => _startForegroundTask());
+      }
     });
   }
 
@@ -227,7 +274,20 @@ class _ChatMainState extends State<ChatMain> {
                           null
                   ? Container()
                   : ChannelView(
-                      getPastLog: _sendGetPastLog,
+                      getPastLog: (lastLogId) {
+                        if (kIsWeb) {
+                          _ircTalk?.sendGetPastLogs(
+                              _currentServer, _currentChannel, lastLogId);
+                        } else {
+                          var getPastLogs = {
+                            "taskType": "getPastLogs",
+                            "server": _currentServer,
+                            "channel": _currentChannel,
+                            "lastLogId": lastLogId,
+                          };
+                          _sendPort?.send(getPastLogs);
+                        }
+                      },
                       controller: _scrollController,
                       channel:
                           _servers[_currentServer]!.channels[_currentChannel]!),
@@ -251,57 +311,34 @@ class _ChatMainState extends State<ChatMain> {
     );
   }
 
-  void _send(json) {
-    dev.log("<<< " + json.toString());
-    widget.webSocketChannel.sink.add(jsonEncode(json));
+  void _sendMessage() {
+    if (_controller.text.isNotEmpty) {
+      if (kIsWeb) {
+        _ircTalk?.sendMessage(
+            _currentServer, _currentChannel, _controller.text);
+      } else {
+        var msg = {
+          "taskType": "send",
+          "server": _currentServer,
+          "channel": _currentChannel,
+          "text": _controller.text,
+        };
+        _sendPort?.send(msg);
+      }
+    }
+    _controller.text = "";
   }
 
-  void _register() {
-    var register = {
-      "type": "register",
-      "data": {"access_token": widget.accessToken},
-      "msg_id": _getMsgId(),
-    };
-    _send(register);
-  }
-
-  void _tryLogin(authKey) {
-    var login = {
-      "type": "login",
-      "data": {"auth_key": authKey},
-      "msg_id": _getMsgId()
-    };
-    _send(login);
+  void _storeAuth(authKey) async {
+    var sp = await SharedPreferences.getInstance();
+    sp.setString("authKey", authKey);
+    sp.setInt("timeout", DateTime.now().millisecondsSinceEpoch + 604800000);
   }
 
   void _msgHandler(event) async {
     var json = jsonDecode(event.toString());
 
-    dev.log(">>> " + json.toString());
     switch (json["type"]) {
-      case "ping":
-        if (checkPing != null) {
-          checkPing!.cancel();
-          checkPing = null;
-        } else {
-          _reservePing();
-        }
-        break;
-      case "register":
-        var sp = await SharedPreferences.getInstance();
-        sp.setString("authKey", json["data"]["auth_key"]);
-        _tryLogin(json["data"]["auth_key"]);
-        break;
-      case "login":
-        var reqServer = {
-          "type": "getServers",
-          "data": {},
-          "msg_id": _getMsgId()
-        };
-        _send(reqServer);
-        keepAlive = json["data"]["keepalive"];
-        _reservePing();
-        break;
       case "getServers":
         for (var server in json["data"]["servers"]) {
           _addServer(server);
@@ -328,12 +365,6 @@ class _ChatMainState extends State<ChatMain> {
           }
         }
 
-        var getInitLog = {
-          "type": "getInitLogs",
-          "data": {},
-          "msg_id": _getMsgId()
-        };
-        _send(getInitLog);
         break;
       case "getInitLogs":
         setState(() {
@@ -432,53 +463,15 @@ class _ChatMainState extends State<ChatMain> {
     }
   }
 
-  void _sendMessage() {
-    if (_controller.text.isNotEmpty) {
-      var msg = {
-        "type": "sendLog",
-        "data": {
-          "server_id": _currentServer,
-          "channel": _currentChannel,
-          "message": _controller.text
-        },
-        "msg_id": _getMsgId()
-      };
-      _send(msg);
-    }
-    _controller.clear();
-  }
-
-  void _reservePing() {
-    if (keepAlive > 0) {
-      Timer(Duration(seconds: (keepAlive - 800)), _sendPing);
-    }
-  }
-
-  void _sendPing() {
-    var ping = {"type": "ping", "data": {}, "msg_id": _getMsgId()};
-
-    _send(ping);
-  }
-
-  void _sendGetPastLog(lasglogid) {
-    var getPastLogs = {
-      "type": "getPastLogs",
-      "data": {
-        "server_id": _currentServer,
-        "channel": _currentChannel,
-        "last_log_id": lasglogid
-      },
-      "msg_id": _getMsgId()
-    };
-    _send(getPastLogs);
-  }
-
   @override
   void dispose() {
     _scrollController.dispose();
     _chatFocus.dispose();
-    _fgbg.cancel();
-    widget.webSocketChannel.sink.close();
+    _ircTalk?.close();
+    _receivePort?.close();
+    if (!kIsWeb) {
+      FlutterForegroundTask.stopService();
+    }
     dev.log("dispose");
     super.dispose();
   }
