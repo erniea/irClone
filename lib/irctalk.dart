@@ -144,6 +144,7 @@ class IrcTalk {
         break;
       case "getServers":
         _getInitLog();
+        Fluttertoast.showToast(msg: "접속 되었습니다");
         break;
       case "sendLog":
         if (_checkTimer != null) {
