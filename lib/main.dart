@@ -478,7 +478,6 @@ class _ChatMainState extends State<ChatMain> {
     if (!kIsWeb) {
       FlutterForegroundTask.stopService();
     }
-    dev.log("dispose");
     super.dispose();
   }
 

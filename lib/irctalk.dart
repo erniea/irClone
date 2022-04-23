@@ -16,7 +16,7 @@ class IrcTalk {
   String? _authKey;
 
   WebSocketChannel? _webSocketChannel;
-  Timer? _checkPing;
+  Timer? _checkTimer;
 
   IrcTalk({required this.msgHandler, required this.storeAuth});
 
@@ -110,6 +110,11 @@ class IrcTalk {
       "msg_id": _getMsgId()
     };
     _send(msg);
+
+    _checkTimer = Timer(const Duration(milliseconds: 300), () {
+      createWebSocketChannel();
+      initWebSocket(null, _authKey);
+    });
   }
 
   Future<void> _msgHandler(event) async {
@@ -119,12 +124,7 @@ class IrcTalk {
     msgHandler(event);
     switch (json["type"]) {
       case "ping":
-        if (_checkPing != null) {
-          _checkPing?.cancel();
-          _checkPing = null;
-        } else {
-          _reservePing();
-        }
+        _reservePing();
         break;
       case "register":
         storeAuth(json["data"]["auth_key"]);
@@ -142,6 +142,12 @@ class IrcTalk {
         break;
       case "getServers":
         _getInitLog();
+        break;
+      case "sendLog":
+        if (_checkTimer != null) {
+          _checkTimer?.cancel();
+          _checkTimer = null;
+        }
         break;
     }
   }
