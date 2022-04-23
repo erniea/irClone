@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -112,6 +113,7 @@ class IrcTalk {
     _send(msg);
 
     _checkTimer = Timer(const Duration(milliseconds: 300), () {
+      Fluttertoast.showToast(msg: "재접속 합니다.");
       createWebSocketChannel();
       initWebSocket(null, _authKey);
     });
