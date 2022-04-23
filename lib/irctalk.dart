@@ -101,6 +101,12 @@ class IrcTalk {
   }
 
   void sendMessage(currentServer, currentChannel, text) {
+    _checkTimer = Timer(const Duration(milliseconds: 300), () {
+      Fluttertoast.showToast(msg: "재접속 합니다.");
+      createWebSocketChannel();
+      initWebSocket(null, _authKey);
+    });
+
     var msg = {
       "type": "sendLog",
       "data": {
@@ -111,12 +117,6 @@ class IrcTalk {
       "msg_id": _getMsgId()
     };
     _send(msg);
-
-    _checkTimer = Timer(const Duration(milliseconds: 300), () {
-      Fluttertoast.showToast(msg: "재접속 합니다.");
-      createWebSocketChannel();
-      initWebSocket(null, _authKey);
-    });
   }
 
   Future<void> _msgHandler(event) async {
