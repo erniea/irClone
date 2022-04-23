@@ -6,7 +6,7 @@
    <application
         android:label="irclone"
         android:name="${applicationName}"
-        android:icon="@mipmap/launcher_icon">
+        android:icon="@mipmap/ic_launcher">
         
         <service android:name="com.pravera.flutter_foreground_task.service.ForegroundService" />
 
