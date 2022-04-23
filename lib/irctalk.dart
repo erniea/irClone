@@ -8,32 +8,36 @@ import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 class IrcTalk {
-  final Uri ircTalk = Uri.parse("wss://beta.ircta.lk/irctalk");
-  final Map<String, dynamic> headers = {"Origin": "https://beta.ircta.lk"};
+  final Uri _ircTalk = Uri.parse("wss://beta.ircta.lk/irctalk");
+  final Map<String, dynamic> _headers = {"Origin": "https://beta.ircta.lk"};
 
   final Function msgHandler;
   final Function storeAuth;
-  int keepAlive = 1800;
+  int _keepAlive = 1800;
   String? _authKey;
 
-  WebSocketChannel? webSocketChannel;
-  Timer? checkPing;
-  IrcTalk({required this.msgHandler, required this.storeAuth}) {}
+  WebSocketChannel? _webSocketChannel;
+  Timer? _checkPing;
+  StreamSubscription<FGBGType>? _fgbg;
+
+  IrcTalk({required this.msgHandler, required this.storeAuth}) {
+    _fgbg = FGBGEvents.stream.listen(_fgbgHandler);
+  }
 
   int _msgId = 0;
   int _getMsgId() => ++_msgId;
 
   void createWebSocketChannel() {
-    webSocketChannel = kIsWeb
-        ? WebSocketChannel.connect(ircTalk)
+    _webSocketChannel = kIsWeb
+        ? WebSocketChannel.connect(_ircTalk)
         : IOWebSocketChannel.connect(
-            ircTalk,
-            headers: headers,
+            _ircTalk,
+            headers: _headers,
           );
   }
 
   void initWebSocket(accessToken, authKey) {
-    webSocketChannel?.stream.listen(_msgHandler);
+    _webSocketChannel?.stream.listen(_msgHandler);
     if (authKey == null || authKey.isEmpty) {
       _register(accessToken);
     } else {
@@ -43,12 +47,13 @@ class IrcTalk {
   }
 
   void close() {
-    webSocketChannel?.sink.close();
+    _webSocketChannel?.sink.close();
+    _fgbg?.cancel();
   }
 
   void _fgbgHandler(event) {
     if (event == FGBGType.foreground) {
-      checkPing = Timer(const Duration(milliseconds: 300), () {
+      _checkPing = Timer(const Duration(milliseconds: 300), () {
         createWebSocketChannel();
         initWebSocket(null, _authKey);
       });
@@ -76,12 +81,12 @@ class IrcTalk {
 
   void _send(json) {
     log("<<< " + DateTime.now().toString() + " " + json.toString());
-    webSocketChannel?.sink.add(jsonEncode(json));
+    _webSocketChannel?.sink.add(jsonEncode(json));
   }
 
   void _reservePing() {
-    if (keepAlive > 0) {
-      Timer(Duration(seconds: (keepAlive - 800)), _sendPing);
+    if (_keepAlive > 0) {
+      Timer(Duration(seconds: (_keepAlive - 800)), _sendPing);
     }
   }
 
@@ -129,9 +134,9 @@ class IrcTalk {
     msgHandler(event);
     switch (json["type"]) {
       case "ping":
-        if (checkPing != null) {
-          checkPing?.cancel();
-          checkPing = null;
+        if (_checkPing != null) {
+          _checkPing?.cancel();
+          _checkPing = null;
         } else {
           _reservePing();
         }
@@ -147,7 +152,7 @@ class IrcTalk {
           "msg_id": _getMsgId()
         };
         _send(reqServer);
-        keepAlive = json["data"]["keepalive"];
+        _keepAlive = json["data"]["keepalive"];
         _reservePing();
         break;
       case "getServers":
