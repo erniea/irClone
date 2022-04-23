@@ -123,7 +123,6 @@ class _ChatMainState extends State<ChatMain> {
   final ScrollController _scrollController = ScrollController();
   final FocusNode _chatFocus = FocusNode();
   bool _needsScroll = false;
-  int keepAlive = 0;
 
   ReceivePort? _receivePort;
 
@@ -428,15 +427,17 @@ class _ChatMainState extends State<ChatMain> {
   }
 
   void _addMsg(msg, isNewMsg) {
+    bool myMsg = msg["from"] == _servers[msg["server_id"]]?.myNick;
+    bool mentioned =
+        !myMsg && msg["message"].contains(_servers[msg["server_id"]]?.myNick);
     _servers[msg["server_id"]]?.channels[msg["channel"]]?.chats.add(
           Chat(
               logId: msg["log_id"],
               timestamp: msg["timestamp"],
               from: msg["from"],
               msg: msg["message"],
-              myMsg: msg["from"] == _servers[msg["server_id"]]?.myNick,
-              mentioned:
-                  msg["message"].contains(_servers[msg["server_id"]]?.myNick)),
+              myMsg: myMsg,
+              mentioned: mentioned),
         );
 
     if (isNewMsg) {
@@ -447,8 +448,13 @@ class _ChatMainState extends State<ChatMain> {
               e.serverId == msg["server_id"]) {
             ++e.newMsg;
 
-            if (msg["message"].contains(_servers[msg["server_id"]]?.myNick)) {
+            if (mentioned) {
               e.toMe = true;
+
+              if (!kIsWeb) {
+                FlutterForegroundTask.updateService(
+                    notificationText: "mentioned @ ${msg["channel"]}");
+              }
             }
           }
         }

@@ -62,7 +62,7 @@ class IrcTalk {
   }
 
   void _send(json) {
-    log("<<< " + json.toString());
+    log("<<< " + DateTime.now().toString() + " " + json.toString());
     webSocketChannel?.sink.add(jsonEncode(json));
   }
 
@@ -111,7 +111,7 @@ class IrcTalk {
 
   Future<void> _msgHandler(event) async {
     var json = jsonDecode(event.toString());
-    log(">>> " + json.toString());
+    log(">>> " + DateTime.now().toString() + " " + json.toString());
 
     msgHandler(event);
     switch (json["type"]) {
