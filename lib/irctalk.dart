@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -18,11 +17,8 @@ class IrcTalk {
 
   WebSocketChannel? _webSocketChannel;
   Timer? _checkPing;
-  StreamSubscription<FGBGType>? _fgbg;
 
-  IrcTalk({required this.msgHandler, required this.storeAuth}) {
-    _fgbg = FGBGEvents.stream.listen(_fgbgHandler);
-  }
+  IrcTalk({required this.msgHandler, required this.storeAuth});
 
   int _msgId = 0;
   int _getMsgId() => ++_msgId;
@@ -48,17 +44,6 @@ class IrcTalk {
 
   void close() {
     _webSocketChannel?.sink.close();
-    _fgbg?.cancel();
-  }
-
-  void _fgbgHandler(event) {
-    if (event == FGBGType.foreground) {
-      _checkPing = Timer(const Duration(milliseconds: 300), () {
-        createWebSocketChannel();
-        initWebSocket(null, _authKey);
-      });
-      _sendPing();
-    }
   }
 
   void _register(accessToken) {

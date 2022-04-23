@@ -76,13 +76,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_fgbg:
-    dependency: "direct main"
-    description:
-      name: flutter_fgbg
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.2.0"
   flutter_foreground_task:
     dependency: "direct main"
     description:
