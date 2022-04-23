@@ -30,6 +30,22 @@
           }
         },
         {
+          "client_id": "349437488054-ds4lp79qaodgu86611heg3gs7qp46rc4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bargnbada.irclone",
+            "certificate_hash": "b6cc709977bd4e4baefdc349bb118eee9d5c02be"
+          }
+        },
+        {
+          "client_id": "349437488054-tnnvdhgc7aos84k0mc8jm9sf6bf6pc64.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bargnbada.irclone",
+            "certificate_hash": "24bee34b05f487af5aadfb52e334ee1f767ab308"
+          }
+        },
+        {
           "client_id": "349437488054-apko0h450gts1nqpfe9g085qrkgn2b1h.apps.googleusercontent.com",
           "client_type": 3
         }
