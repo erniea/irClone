@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -13,10 +14,11 @@ class IrcTalk {
   final Function msgHandler;
   final Function storeAuth;
   int keepAlive = 1800;
+  String? _authKey;
 
   WebSocketChannel? webSocketChannel;
-
-  IrcTalk({required this.msgHandler, required this.storeAuth});
+  Timer? checkPing;
+  IrcTalk({required this.msgHandler, required this.storeAuth}) {}
 
   int _msgId = 0;
   int _getMsgId() => ++_msgId;
@@ -35,12 +37,23 @@ class IrcTalk {
     if (authKey == null || authKey.isEmpty) {
       _register(accessToken);
     } else {
+      _authKey = authKey;
       _tryLogin(authKey);
     }
   }
 
   void close() {
     webSocketChannel?.sink.close();
+  }
+
+  void _fgbgHandler(event) {
+    if (event == FGBGType.foreground) {
+      checkPing = Timer(const Duration(milliseconds: 300), () {
+        createWebSocketChannel();
+        initWebSocket(null, _authKey);
+      });
+      _sendPing();
+    }
   }
 
   void _register(accessToken) {
@@ -116,7 +129,12 @@ class IrcTalk {
     msgHandler(event);
     switch (json["type"]) {
       case "ping":
-        _reservePing();
+        if (checkPing != null) {
+          checkPing?.cancel();
+          checkPing = null;
+        } else {
+          _reservePing();
+        }
         break;
       case "register":
         storeAuth(json["data"]["auth_key"]);
