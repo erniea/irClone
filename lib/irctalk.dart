@@ -103,6 +103,7 @@ class IrcTalk {
   void sendMessage(currentServer, currentChannel, text) {
     _checkTimer = Timer(const Duration(milliseconds: 300), () {
       Fluttertoast.showToast(msg: "재접속 합니다.");
+      _webSocketChannel?.sink.close();
       createWebSocketChannel();
       initWebSocket(null, _authKey);
     });

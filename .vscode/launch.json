@@ -15,6 +15,12 @@
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile"
+        },
+        {
+            "name":"attach",
+            "request": "attach",
+            "type": "dart"
         }
+
     ]
 }

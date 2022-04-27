@@ -21,10 +21,7 @@ class WebSocketTask extends TaskHandler {
   }
 
   @override
-  Future<void> onEvent(DateTime timestamp, SendPort? sendPort) async {
-    // Send data to the main isolate.
-    sendPort?.send(timestamp);
-  }
+  Future<void> onEvent(DateTime timestamp, SendPort? sendPort) async {}
 
   @override
   Future<void> onDestroy(DateTime timestamp) async {
