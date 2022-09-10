@@ -1,12 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:isolate';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:irclone/irctalk.dart';
-import 'package:irclone/task.dart';
 import 'package:irclone/view.dart';
 import 'package:irclone/structure.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -24,7 +20,7 @@ class IrClone extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: "irClone",
-      home: WithForegroundTask(child: AuthGate(key: key)),
+      home: AuthGate(key: key),
       theme: ThemeData(primarySwatch: Colors.grey),
     );
   }
@@ -91,11 +87,6 @@ class _AuthGateState extends State<AuthGate> {
   }
 }
 
-void startCallback() {
-  // The setTaskHandler function must be called to handle the task in the background.
-  FlutterForegroundTask.setTaskHandler(WebSocketTask());
-}
-
 class ChatMain extends StatefulWidget {
   final String accessToken;
   final GoogleSignIn googleSignIn;
@@ -120,79 +111,7 @@ class _ChatMainState extends State<ChatMain> {
   final FocusNode _chatFocus = FocusNode();
   bool _needsScroll = false;
 
-  ReceivePort? _receivePort;
-
-  SendPort? _sendPort;
   IrcTalk? _ircTalk;
-
-  Future<void> _initForegroundTask() async {
-    await FlutterForegroundTask.init(
-      androidNotificationOptions: AndroidNotificationOptions(
-        channelId: "bargnbada.irclone",
-        channelName: "irClone Notification",
-        channelDescription: "irClone is running.",
-        channelImportance: NotificationChannelImportance.LOW,
-        priority: NotificationPriority.LOW,
-        iconData: const NotificationIconData(
-          resType: ResourceType.mipmap,
-          resPrefix: ResourcePrefix.ic,
-          name: "launcher",
-        ),
-      ),
-      iosNotificationOptions: const IOSNotificationOptions(
-        showNotification: true,
-        playSound: false,
-      ),
-      foregroundTaskOptions: const ForegroundTaskOptions(
-        interval: 5000,
-        autoRunOnBoot: true,
-        allowWifiLock: true,
-      ),
-      printDevLog: true,
-    );
-  }
-
-  Future<bool> _startForegroundTask() async {
-    ReceivePort? receivePort;
-    if (await FlutterForegroundTask.isRunningService) {
-      receivePort = await FlutterForegroundTask.restartService();
-    } else {
-      receivePort = await FlutterForegroundTask.startService(
-        notificationTitle: "irClone is running",
-        notificationText: "Tap to return to the app",
-        callback: startCallback,
-      );
-    }
-
-    if (receivePort != null) {
-      _receivePort = receivePort;
-      _receivePort?.listen((message) {
-        if (message is SendPort) {
-          _sendPort = message;
-
-          SharedPreferences.getInstance().then((sp) {
-            _sendPort?.send({
-              "taskType": "init",
-              "accessToken": widget.accessToken,
-              "authKey": sp.getString("authKey")
-            });
-          });
-        } else if (message is Map<String, dynamic>) {
-          switch (message["taskType"]) {
-            case "storeAuth":
-              _storeAuth(message["authKey"]);
-              break;
-            case "raw":
-              _msgHandler(message["data"]);
-              break;
-          }
-        }
-      });
-      return true;
-    }
-
-    return false;
-  }
 
   @override
   void initState() {
@@ -203,20 +122,16 @@ class _ChatMainState extends State<ChatMain> {
         sp.setString("authKey", "");
       }
 
-      if (kIsWeb) {
-        _ircTalk = IrcTalk(storeAuth: _storeAuth, msgHandler: _msgHandler);
-        _ircTalk?.createWebSocketChannel();
-        _ircTalk?.initWebSocket(widget.accessToken, sp.getString("authKey"));
-      } else {
-        _initForegroundTask().then((value) => _startForegroundTask());
-      }
+      _ircTalk = IrcTalk(storeAuth: _storeAuth, msgHandler: _msgHandler);
+      _ircTalk?.createWebSocketChannel();
+      _ircTalk?.initWebSocket(widget.accessToken, sp.getString("authKey"));
     });
   }
 
   @override
   Widget build(BuildContext context) {
     if (_needsScroll) {
-      WidgetsBinding.instance?.addPostFrameCallback((_) => _scrollToEnd());
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToEnd());
       _needsScroll = false;
     }
 
@@ -250,9 +165,7 @@ class _ChatMainState extends State<ChatMain> {
           IconButton(
               onPressed: () {
                 widget.googleSignIn.signOut();
-                if (kIsWeb) {
-                  widget.googleSignIn.disconnect();
-                }
+                widget.googleSignIn.disconnect();
               },
               icon: const Icon(Icons.logout))
         ],
@@ -270,18 +183,8 @@ class _ChatMainState extends State<ChatMain> {
                   ? Container()
                   : ChannelView(
                       getPastLog: (lastLogId) {
-                        if (kIsWeb) {
-                          _ircTalk?.sendGetPastLogs(
-                              _currentServer, _currentChannel, lastLogId);
-                        } else {
-                          var getPastLogs = {
-                            "taskType": "getPastLogs",
-                            "server": _currentServer,
-                            "channel": _currentChannel,
-                            "lastLogId": lastLogId,
-                          };
-                          _sendPort?.send(getPastLogs);
-                        }
+                        _ircTalk?.sendGetPastLogs(
+                            _currentServer, _currentChannel, lastLogId);
                       },
                       controller: _scrollController,
                       channel:
@@ -308,18 +211,7 @@ class _ChatMainState extends State<ChatMain> {
 
   void _sendMessage() {
     if (_controller.text.isNotEmpty) {
-      if (kIsWeb) {
-        _ircTalk?.sendMessage(
-            _currentServer, _currentChannel, _controller.text);
-      } else {
-        var msg = {
-          "taskType": "send",
-          "server": _currentServer,
-          "channel": _currentChannel,
-          "text": _controller.text,
-        };
-        _sendPort?.send(msg);
-      }
+      _ircTalk?.sendMessage(_currentServer, _currentChannel, _controller.text);
     }
     _controller.text = "";
   }
@@ -446,11 +338,6 @@ class _ChatMainState extends State<ChatMain> {
 
             if (mentioned) {
               e.toMe = true;
-
-              if (!kIsWeb) {
-                FlutterForegroundTask.updateService(
-                    notificationText: "mentioned @ ${msg["channel"]}");
-              }
             }
           }
         }
@@ -470,10 +357,6 @@ class _ChatMainState extends State<ChatMain> {
     _scrollController.dispose();
     _chatFocus.dispose();
     _ircTalk?.close();
-    _receivePort?.close();
-    if (!kIsWeb) {
-      FlutterForegroundTask.stopService();
-    }
     super.dispose();
   }
 

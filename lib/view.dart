@@ -1,7 +1,6 @@
 import 'package:badges/badges.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:intl/intl.dart';
 import 'package:irclone/structure.dart';
@@ -331,8 +330,6 @@ class _ChannelDrawerState extends State<ChannelDrawer> {
           setState(() {
             c.newMsg = 0;
             c.toMe = false;
-            FlutterForegroundTask.updateService(
-                notificationText: "Tap to return to the app");
           });
 
           Navigator.pop(context);
