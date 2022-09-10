@@ -44,6 +44,7 @@ dependencies:
   url_launcher: ^6.0.20
   fluttertoast: ^8.0.9
   flutter_launcher_icons: ^0.9.2
+  permission_handler: ^10.0.0
 
 dev_dependencies:
 

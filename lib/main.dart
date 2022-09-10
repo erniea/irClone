@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:irclone/irctalk.dart';
 import 'package:irclone/view.dart';
 import 'package:irclone/structure.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:google_sign_in/google_sign_in.dart';
@@ -16,11 +17,24 @@ Future<void> main() async {
 class IrClone extends StatelessWidget {
   const IrClone({Key? key}) : super(key: key);
 
+  Future<String> _callPermission() async {
+    await Permission.ignoreBatteryOptimizations.request();
+    return "permission";
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: "irClone",
-      home: AuthGate(key: key),
+      home: FutureBuilder(
+        future: _callPermission(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            return AuthGate(key: key);
+          }
+          return const CircularProgressIndicator();
+        },
+      ),
       theme: ThemeData(primarySwatch: Colors.grey),
     );
   }
