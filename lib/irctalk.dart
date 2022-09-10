@@ -34,7 +34,14 @@ class IrcTalk {
   }
 
   void initWebSocket(accessToken, authKey) {
-    _webSocketChannel?.stream.listen(_msgHandler);
+    _webSocketChannel?.stream.listen(_msgHandler, onDone: () {
+      log("--- on done called");
+      _webSocketChannel?.sink.close();
+      createWebSocketChannel();
+      initWebSocket(accessToken, authKey);
+    }, onError: (error) {
+      log("--- on error called " + error.toString());
+    });
     if (authKey == null || authKey.isEmpty) {
       _register(accessToken);
     } else {
