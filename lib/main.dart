@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:irclone/irctalk.dart';
 import 'package:irclone/view.dart';
@@ -35,7 +36,7 @@ class IrClone extends StatelessWidget {
         child: FutureBuilder(
           future: _callPermission(),
           builder: (context, snapshot) {
-            if (snapshot.hasData) {
+            if (snapshot.hasData || kIsWeb) {
               return AuthGate(key: key);
             }
             return Container();
