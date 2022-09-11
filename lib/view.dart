@@ -162,7 +162,8 @@ class ChatView extends StatelessWidget {
       ));
     }
     inColumnChildren.add(SelectableLinkify(
-      onOpen: (link) => launch(link.url),
+      onOpen: (link) =>
+          launchUrl(Uri.parse(link.url), mode: LaunchMode.externalApplication),
       text: chat.msg,
       options: const LinkifyOptions(humanize: false),
       style: textStyle,
@@ -196,7 +197,8 @@ class ChatView extends StatelessWidget {
     }
 
     inColumnChildren.add(SelectableLinkify(
-      onOpen: (link) => launch(link.url),
+      onOpen: (link) =>
+          launchUrl(Uri.parse(link.url), mode: LaunchMode.externalApplication),
       text: chat.msg,
       options: const LinkifyOptions(humanize: false),
       style: textStyle,
@@ -274,12 +276,12 @@ class _ChannelDrawerState extends State<ChannelDrawer> {
             children: [
               Expanded(child: Container()),
               ElevatedButton(
-                child: const Icon(Icons.add_link),
                 onPressed: () {
                   Navigator.pop(context);
                   _popupAddServer(context);
                 },
                 style: ElevatedButton.styleFrom(shape: const CircleBorder()),
+                child: const Icon(Icons.add_link),
               ),
             ],
           ),
@@ -297,13 +299,13 @@ class _ChannelDrawerState extends State<ChannelDrawer> {
           title: Row(children: [
             Expanded(child: Text(widget.servers[c.serverId]!.serverName)),
             ElevatedButton(
-              child: const Icon(Icons.add),
               onPressed: () {
                 Navigator.pop(context);
                 _popupAddChannel(context, c.serverId,
                     widget.servers[c.serverId]!.serverName);
               },
               style: ElevatedButton.styleFrom(shape: const CircleBorder()),
+              child: const Icon(Icons.add),
             ),
           ]),
         ));
