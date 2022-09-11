@@ -328,7 +328,7 @@ class _ChannelDrawerState extends State<ChannelDrawer> {
               : Container(),
         ]),
         onTap: () {
-          widget.onChannelSelected(c.serverId, c.channelName);
+          widget.onChannelSelected(c);
           setState(() {
             c.newMsg = 0;
             c.toMe = false;

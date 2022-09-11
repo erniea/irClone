@@ -20,9 +20,13 @@ class Channel {
 }
 
 class ChannelForList {
-  ChannelForList({required this.channelName, required this.serverId});
+  ChannelForList(
+      {required this.channelName,
+      required this.channelTopic,
+      required this.serverId});
 
   final String channelName;
+  final String channelTopic;
   final int serverId;
   int newMsg = 0;
   bool toMe = false;

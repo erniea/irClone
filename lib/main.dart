@@ -124,6 +124,7 @@ class _ChatMainState extends State<ChatMain> {
   final TextEditingController _controller = TextEditingController();
 
   String _currentChannel = "";
+  String _currentTopic = "";
   int _currentServer = 0;
 
   final Map<int, Server> _servers = {};
@@ -160,10 +161,11 @@ class _ChatMainState extends State<ChatMain> {
       drawer: ChannelDrawer(
         servers: _servers,
         channels: _channelsForList,
-        onChannelSelected: (server, channel) {
+        onChannelSelected: (c) {
           setState(() {
-            _currentServer = server;
-            _currentChannel = channel;
+            _currentServer = c.serverId;
+            _currentChannel = c.channelName;
+            _currentTopic = c.channelTopic;
             _needsScroll = true;
           });
           SharedPreferences.getInstance().then((sp) {
@@ -181,7 +183,13 @@ class _ChatMainState extends State<ChatMain> {
         currentChannel: _currentChannel,
       ),
       appBar: AppBar(
-        title: Text(_currentChannel),
+        title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(_currentChannel),
+          Text(
+            _currentTopic,
+            style: const TextStyle(fontSize: 10),
+          ),
+        ]),
         actions: [
           IconButton(
               onPressed: () {
@@ -332,7 +340,9 @@ class _ChatMainState extends State<ChatMain> {
     _servers[channel["server_id"]]!.channels[channel["channel"]] = Channel();
 
     _channelsForList.add(ChannelForList(
-        channelName: channel["channel"], serverId: channel["server_id"]));
+        channelName: channel["channel"],
+        channelTopic: channel["topic"],
+        serverId: channel["server_id"]));
   }
 
   void _addMsg(msg, isNewMsg) {
