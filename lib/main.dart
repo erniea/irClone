@@ -38,7 +38,7 @@ class IrClone extends StatelessWidget {
             if (snapshot.hasData) {
               return AuthGate(key: key);
             }
-            return const CircularProgressIndicator();
+            return Container();
           },
         ),
       ),
