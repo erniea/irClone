@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:irclone/irctalk.dart';
 import 'package:irclone/view.dart';
 import 'package:irclone/structure.dart';
+import 'package:move_to_background/move_to_background.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -26,14 +27,20 @@ class IrClone extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: "irClone",
-      home: FutureBuilder(
-        future: _callPermission(),
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            return AuthGate(key: key);
-          }
-          return const CircularProgressIndicator();
+      home: WillPopScope(
+        onWillPop: () async {
+          MoveToBackground.moveTaskToBack();
+          return false;
         },
+        child: FutureBuilder(
+          future: _callPermission(),
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              return AuthGate(key: key);
+            }
+            return const CircularProgressIndicator();
+          },
+        ),
       ),
       theme: ThemeData(primarySwatch: Colors.grey),
     );
