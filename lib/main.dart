@@ -261,26 +261,27 @@ class _ChatMainState extends State<ChatMain> {
           _addServer(server);
         }
 
+        var sp = await SharedPreferences.getInstance();
+        String? prevChannel = sp.getString("channel");
+        int? prevServer = sp.getInt("server");
+
         _channelsForList.clear();
         for (var channel in json["data"]["channels"]) {
           _addChannel(channel);
+
+          if (channel["channel"] == prevChannel &&
+              channel["server_id"] == prevServer) {
+            setState(() {
+              _currentServer = prevServer!;
+              _currentChannel = prevChannel!;
+              _currentTopic = channel["topic"];
+            });
+          }
         }
 
         _channelsForList.sort(
           (a, b) => a.channelName.compareTo(b.channelName),
         );
-
-        {
-          var sp = await SharedPreferences.getInstance();
-          String? channel = sp.getString("channel");
-
-          if (channel != null && channel.isNotEmpty) {
-            setState(() {
-              _currentServer = sp.getInt("server")!;
-              _currentChannel = channel;
-            });
-          }
-        }
 
         break;
       case "getInitLogs":
