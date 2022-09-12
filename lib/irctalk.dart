@@ -40,7 +40,7 @@ class IrcTalk {
       createWebSocketChannel();
       initWebSocket(accessToken, authKey);
     }, onError: (error) {
-      log("--- on error called " + error.toString());
+      log("--- on error called $error");
     });
     if (authKey == null || authKey.isEmpty) {
       _register(accessToken);
@@ -73,7 +73,7 @@ class IrcTalk {
   }
 
   void _send(json) {
-    log("<<< " + DateTime.now().toString() + " " + json.toString());
+    log("<<< $DateTime.now() $json");
     _webSocketChannel?.sink.add(jsonEncode(json));
   }
 
@@ -129,7 +129,7 @@ class IrcTalk {
 
   Future<void> _msgHandler(event) async {
     var json = jsonDecode(event.toString());
-    log(">>> " + DateTime.now().toString() + " " + json.toString());
+    log(">>> $DateTime.now() $json");
 
     msgHandler(event);
     switch (json["type"]) {

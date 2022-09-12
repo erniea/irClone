@@ -6,10 +6,10 @@ class ServerSettingDlg extends StatefulWidget {
 
   final Function sendAddServer;
   @override
-  _ServerSettingDlgState createState() => _ServerSettingDlgState();
+  ServerSettingDlgState createState() => ServerSettingDlgState();
 }
 
-class _ServerSettingDlgState extends State<ServerSettingDlg> {
+class ServerSettingDlgState extends State<ServerSettingDlg> {
   final TextEditingController _serverName = TextEditingController(),
       _serverAddress = TextEditingController(text: "evans.uriirc.org"),
       _serverPort = TextEditingController(text: "16661"),
@@ -109,10 +109,10 @@ class ChannelSettingDlg extends StatefulWidget {
   final int serverId;
   final Function sendAddChannelToServer;
   @override
-  _ChannelSettingDlgState createState() => _ChannelSettingDlgState();
+  ChannelSettingDlgState createState() => ChannelSettingDlgState();
 }
 
-class _ChannelSettingDlgState extends State<ChannelSettingDlg> {
+class ChannelSettingDlgState extends State<ChannelSettingDlg> {
   final TextEditingController _controller = TextEditingController(text: "#");
   final _formKey = GlobalKey<FormState>();
   @override
@@ -125,7 +125,7 @@ class _ChannelSettingDlgState extends State<ChannelSettingDlg> {
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
-      title: Text("Add a Channel to " + widget.serverName),
+      title: Text("Add a Channel to $widget.serverName"),
       content: Form(
         key: _formKey,
         child: Column(mainAxisSize: MainAxisSize.min, children: [

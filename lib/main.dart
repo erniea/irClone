@@ -52,10 +52,10 @@ class AuthGate extends StatefulWidget {
   const AuthGate({Key? key}) : super(key: key);
 
   @override
-  _AuthGateState createState() => _AuthGateState();
+  AuthGateState createState() => AuthGateState();
 }
 
-class _AuthGateState extends State<AuthGate> {
+class AuthGateState extends State<AuthGate> {
   String? accessToken;
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
@@ -118,10 +118,10 @@ class ChatMain extends StatefulWidget {
       : super(key: key);
 
   @override
-  _ChatMainState createState() => _ChatMainState();
+  ChatMainState createState() => ChatMainState();
 }
 
-class _ChatMainState extends State<ChatMain> {
+class ChatMainState extends State<ChatMain> {
   final TextEditingController _controller = TextEditingController();
 
   String _currentChannel = "";
@@ -325,7 +325,7 @@ class _ChatMainState extends State<ChatMain> {
   void _sendAddChannelToServer(server, channel) {
     if (channel.isNotEmpty) {
       if (channel[0] != "#") {
-        channel = "#" + channel;
+        channel = "#$channel";
       }
       if (channel.length > 1) {
         _notImpl();
