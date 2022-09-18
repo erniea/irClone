@@ -73,7 +73,7 @@ class IrcTalk {
   }
 
   void _send(json) {
-    log("<<< $DateTime.now() $json");
+    log("<<< ${DateTime.now()} $json");
     _webSocketChannel?.sink.add(jsonEncode(json));
   }
 
@@ -129,7 +129,7 @@ class IrcTalk {
 
   Future<void> _msgHandler(event) async {
     var json = jsonDecode(event.toString());
-    log(">>> $DateTime.now() $json");
+    log(">>> ${DateTime.now()} $json");
 
     msgHandler(event);
     switch (json["type"]) {
