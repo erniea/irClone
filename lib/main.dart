@@ -3,6 +3,8 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_app_badger/flutter_app_badger.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:irclone/irctalk.dart';
 import 'package:irclone/view.dart';
 import 'package:irclone/structure.dart';
@@ -121,7 +123,7 @@ class ChatMain extends StatefulWidget {
   ChatMainState createState() => ChatMainState();
 }
 
-class ChatMainState extends State<ChatMain> {
+class ChatMainState extends State<ChatMain> with WidgetsBindingObserver {
   final TextEditingController _controller = TextEditingController();
 
   String _currentChannel = "";
@@ -136,6 +138,9 @@ class ChatMainState extends State<ChatMain> {
 
   IrcTalk? _ircTalk;
 
+  final FlutterLocalNotificationsPlugin _localNoti =
+      FlutterLocalNotificationsPlugin();
+
   @override
   void initState() {
     super.initState();
@@ -149,6 +154,34 @@ class ChatMainState extends State<ChatMain> {
       _ircTalk?.createWebSocketChannel();
       _ircTalk?.initWebSocket(widget.accessToken, sp.getString("authKey"));
     });
+
+    WidgetsBinding.instance.addObserver(this);
+    _initLocalNoti();
+  }
+
+  Future<void> _initLocalNoti() async {
+    const IOSInitializationSettings initializationSettingsIOS =
+        IOSInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('ic_launcher_foreground');
+
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsIOS,
+    );
+    await _localNoti.initialize(initializationSettings);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      FlutterAppBadger.removeBadge();
+    }
   }
 
   @override
@@ -375,6 +408,21 @@ class ChatMainState extends State<ChatMain> {
           }
         }
       }
+
+      if (mentioned) {
+        _localNoti.cancelAll();
+        NotificationDetails detail = const NotificationDetails(
+            android: AndroidNotificationDetails(
+          "irClone",
+          "irClone",
+          importance: Importance.high,
+          priority: Priority.high,
+          ongoing: true,
+        ));
+
+        _localNoti.show(
+            0, "<${msg["channel"]}> ${msg["from"]}", msg["message"], detail);
+      }
     }
   }
 
@@ -390,6 +438,7 @@ class ChatMainState extends State<ChatMain> {
     _scrollController.dispose();
     _chatFocus.dispose();
     _ircTalk?.close();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
