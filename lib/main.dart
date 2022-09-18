@@ -312,8 +312,8 @@ class ChatMainState extends State<ChatMain> with WidgetsBindingObserver {
         String? prevChannel = sp.getString("channel");
         int? prevServer = sp.getInt("server");
         setState(() {
-          _currentServer = prevServer!;
-          _currentChannel = prevChannel!;
+          _currentServer = prevServer ?? 0;
+          _currentChannel = prevChannel ?? "";
         });
 
         _channelsForList.clear();
