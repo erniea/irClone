@@ -16,17 +16,16 @@ class Chat {
 }
 
 class Channel {
+  Channel({required this.channelTopic});
+
   List<Chat> chats = [];
+  final String channelTopic;
 }
 
 class ChannelForList {
-  ChannelForList(
-      {required this.channelName,
-      required this.channelTopic,
-      required this.serverId});
+  ChannelForList({required this.channelName, required this.serverId});
 
   final String channelName;
-  final String channelTopic;
   final int serverId;
   int newMsg = 0;
   bool toMe = false;

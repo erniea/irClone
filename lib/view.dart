@@ -329,11 +329,6 @@ class _ChannelDrawerState extends State<ChannelDrawer> {
         ]),
         onTap: () {
           widget.onChannelSelected(c);
-          setState(() {
-            c.newMsg = 0;
-            c.toMe = false;
-          });
-
           Navigator.pop(context);
         },
       ));

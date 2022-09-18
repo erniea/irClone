@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -128,7 +127,6 @@ class ChatMainState extends State<ChatMain> with WidgetsBindingObserver {
   final TextEditingController _controller = TextEditingController();
 
   String _currentChannel = "";
-  String _currentTopic = "";
   int _currentServer = 0;
 
   final Map<int, Server> _servers = {};
@@ -221,7 +219,8 @@ class ChatMainState extends State<ChatMain> with WidgetsBindingObserver {
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(_currentChannel),
           Text(
-            _currentTopic,
+            _servers[_currentServer]?.channels[_currentChannel]?.channelTopic ??
+                "",
             style: const TextStyle(fontSize: 10),
           ),
         ]),
@@ -277,8 +276,9 @@ class ChatMainState extends State<ChatMain> with WidgetsBindingObserver {
     setState(() {
       _currentServer = channel.serverId;
       _currentChannel = channel.channelName;
-      _currentTopic = channel.channelTopic;
       _needsScroll = true;
+      channel.newMsg = 0;
+      channel.toMe = false;
     });
     SharedPreferences.getInstance().then((sp) {
       sp.setInt("server", _currentServer);
@@ -311,19 +311,14 @@ class ChatMainState extends State<ChatMain> with WidgetsBindingObserver {
         var sp = await SharedPreferences.getInstance();
         String? prevChannel = sp.getString("channel");
         int? prevServer = sp.getInt("server");
+        setState(() {
+          _currentServer = prevServer!;
+          _currentChannel = prevChannel!;
+        });
 
         _channelsForList.clear();
         for (var channel in json["data"]["channels"]) {
           _addChannel(channel);
-
-          if (channel["channel"] == prevChannel &&
-              channel["server_id"] == prevServer) {
-            setState(() {
-              _currentServer = prevServer!;
-              _currentChannel = prevChannel!;
-              _currentTopic = channel["topic"];
-            });
-          }
         }
 
         _channelsForList.sort(
@@ -386,12 +381,11 @@ class ChatMainState extends State<ChatMain> with WidgetsBindingObserver {
   }
 
   void _addChannel(channel) {
-    _servers[channel["server_id"]]!.channels[channel["channel"]] = Channel();
+    _servers[channel["server_id"]]!.channels[channel["channel"]] =
+        Channel(channelTopic: channel["topic"]);
 
     _channelsForList.add(ChannelForList(
-        channelName: channel["channel"],
-        channelTopic: channel["topic"],
-        serverId: channel["server_id"]));
+        channelName: channel["channel"], serverId: channel["server_id"]));
   }
 
   void _addMsg(msg, isNewMsg) {
