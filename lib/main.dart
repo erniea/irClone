@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -174,7 +175,18 @@ class ChatMainState extends State<ChatMain> with WidgetsBindingObserver {
       android: initializationSettingsAndroid,
       iOS: initializationSettingsIOS,
     );
-    await _localNoti.initialize(initializationSettings);
+    await _localNoti.initialize(
+      initializationSettings,
+      onSelectNotification: (payload) {
+        final arr = payload?.split(":");
+        for (ChannelForList c in _channelsForList) {
+          if (c.serverId == int.parse(arr![0]) && c.channelName == arr[1]) {
+            onChannelSelected(c);
+            break;
+          }
+        }
+      },
+    );
   }
 
   @override
@@ -195,18 +207,7 @@ class ChatMainState extends State<ChatMain> with WidgetsBindingObserver {
       drawer: ChannelDrawer(
         servers: _servers,
         channels: _channelsForList,
-        onChannelSelected: (c) {
-          setState(() {
-            _currentServer = c.serverId;
-            _currentChannel = c.channelName;
-            _currentTopic = c.channelTopic;
-            _needsScroll = true;
-          });
-          SharedPreferences.getInstance().then((sp) {
-            sp.setInt("server", _currentServer);
-            sp.setString("channel", _currentChannel);
-          });
-        },
+        onChannelSelected: onChannelSelected,
         sendAddChannelToServer: (server, channel) =>
             _sendAddChannelToServer(server, channel),
         sendAddServer: (serverName, serverAddress, serverPort, useSSL, nickName,
@@ -270,6 +271,19 @@ class ChatMainState extends State<ChatMain> with WidgetsBindingObserver {
         ),
       ),
     );
+  }
+
+  void onChannelSelected(ChannelForList channel) {
+    setState(() {
+      _currentServer = channel.serverId;
+      _currentChannel = channel.channelName;
+      _currentTopic = channel.channelTopic;
+      _needsScroll = true;
+    });
+    SharedPreferences.getInstance().then((sp) {
+      sp.setInt("server", _currentServer);
+      sp.setString("channel", _currentChannel);
+    });
   }
 
   void _sendMessage() {
@@ -412,16 +426,18 @@ class ChatMainState extends State<ChatMain> with WidgetsBindingObserver {
       if (mentioned) {
         _localNoti.cancelAll();
         NotificationDetails detail = const NotificationDetails(
-            android: AndroidNotificationDetails(
-          "irClone",
-          "irClone",
-          importance: Importance.high,
-          priority: Priority.high,
-          ongoing: true,
-        ));
+          android: AndroidNotificationDetails(
+            "irClone",
+            "irClone",
+            importance: Importance.high,
+            priority: Priority.high,
+            ongoing: false,
+          ),
+        );
 
         _localNoti.show(
-            0, "<${msg["channel"]}> ${msg["from"]}", msg["message"], detail);
+            0, "<${msg["channel"]}> ${msg["from"]}", msg["message"], detail,
+            payload: "${msg["server_id"]}:${msg["channel"]}");
       }
     }
   }
