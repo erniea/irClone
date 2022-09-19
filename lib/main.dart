@@ -381,8 +381,12 @@ class ChatMainState extends State<ChatMain> with WidgetsBindingObserver {
   }
 
   void _addChannel(channel) {
+    List<String> members = [];
+    for (var s in channel["members"]) {
+      members.add(s);
+    }
     _servers[channel["server_id"]]!.channels[channel["channel"]] =
-        Channel(channelTopic: channel["topic"]);
+        Channel(members: members, channelTopic: channel["topic"]);
 
     _channelsForList.add(ChannelForList(
         channelName: channel["channel"], serverId: channel["server_id"]));

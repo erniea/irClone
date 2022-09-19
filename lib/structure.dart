@@ -16,9 +16,10 @@ class Chat {
 }
 
 class Channel {
-  Channel({required this.channelTopic});
+  Channel({required this.members, required this.channelTopic});
 
   List<Chat> chats = [];
+  List<String> members = [];
   final String channelTopic;
 }
 
